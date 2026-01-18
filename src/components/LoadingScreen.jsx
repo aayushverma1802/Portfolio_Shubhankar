@@ -16,8 +16,7 @@ const LoadingScreen = ({ onComplete }) => {
   ]
 
   useEffect(() => {
-    // CRITICAL: Only complete when model is FULLY loaded (not loading AND progress is 100)
-    // This ensures website doesn't start until model is ready
+    // CRITICAL: Only complete when model is FULLY loaded AND verified in cache
     if (!modelLoading && modelProgress >= 100) {
       setProgress(100)
       setLoadingText(loadingMessages[3])
@@ -27,22 +26,32 @@ const LoadingScreen = ({ onComplete }) => {
         try {
           const { useGLTF } = await import('@react-three/drei')
           const cache = useGLTF.cache || new Map()
-          if (cache.has('/models/f1-car.glb')) {
-            // Model is cached, proceed
-            setTimeout(() => {
-              if (onComplete) onComplete()
-            }, 500)
-          } else {
-            // Model not in cache, wait a bit more
-            setTimeout(() => {
-              if (onComplete) onComplete()
-            }, 1000)
+          
+          // Wait until model is definitely in cache
+          let attempts = 0
+          const checkCache = () => {
+            attempts++
+            if (cache.has('/models/f1-car.glb')) {
+              // Model is cached, proceed
+              setTimeout(() => {
+                if (onComplete) onComplete()
+              }, 500)
+            } else if (attempts < 10) {
+              // Not in cache yet, check again
+              setTimeout(checkCache, 200)
+            } else {
+              // Give up after 2 seconds, proceed anyway
+              setTimeout(() => {
+                if (onComplete) onComplete()
+              }, 500)
+            }
           }
+          checkCache()
         } catch (err) {
-          // If verification fails, proceed anyway
+          // If verification fails, wait a bit then proceed
           setTimeout(() => {
             if (onComplete) onComplete()
-          }, 500)
+          }, 1000)
         }
       }
       verifyModel()
@@ -59,7 +68,7 @@ const LoadingScreen = ({ onComplete }) => {
       return
     }
 
-    // Show progress while loading
+    // Show REAL progress while loading
     if (modelLoading) {
       const currentProgress = Math.max(5, modelProgress)
       setProgress(currentProgress)
