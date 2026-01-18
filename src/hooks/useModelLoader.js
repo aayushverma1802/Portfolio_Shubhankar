@@ -3,7 +3,7 @@ import { useGLTF } from '@react-three/drei'
 
 /**
  * Hook to preload and track loading progress of GLB models
- * Uses drei's preload directly and tracks progress via XHR
+ * Downloads with XHR, then uses drei's preload to cache properly
  */
 export function useModelPreloader(modelUrl) {
   const [loading, setLoading] = useState(true)
@@ -23,7 +23,6 @@ export function useModelPreloader(modelUrl) {
     setError(null)
     setIsCached(false)
 
-    // Track download with XHR for progress, then use drei's preload
     let xhr = null
 
     // Check if already cached
@@ -35,7 +34,7 @@ export function useModelPreloader(modelUrl) {
         if (!cancelled) {
           setLoading(false)
         }
-      }, 300)
+      }, 500)
       return () => {
         cancelled = true
       }
@@ -53,10 +52,10 @@ export function useModelPreloader(modelUrl) {
       if (cancelled) return
       
       if (e.lengthComputable && e.total > 0) {
-        const downloadProgress = 5 + (e.loaded / e.total) * 90
-        setProgress(Math.min(95, downloadProgress))
+        const downloadProgress = 5 + (e.loaded / e.total) * 85
+        setProgress(Math.min(90, downloadProgress))
       } else if (e.loaded > 0) {
-        const estimatedProgress = Math.min(95, 5 + (e.loaded / 18000000) * 90)
+        const estimatedProgress = Math.min(90, 5 + (e.loaded / 18000000) * 85)
         setProgress(estimatedProgress)
       }
     })
@@ -65,28 +64,63 @@ export function useModelPreloader(modelUrl) {
       if (cancelled) return
 
       try {
-        setProgress(95)
+        setProgress(92)
 
-        // CRITICAL: Use drei's preload - it will use browser cache
-        // This ensures proper caching for useGLTF
+        // CRITICAL: Call drei's preload - it will load from browser cache
+        // This MUST complete successfully for useGLTF to find the model
         try {
+          // Wait for drei's preload to complete
           await useGLTF.preload(modelUrl)
-          setProgress(100)
           
-          // Wait to ensure drei's system is ready
-          setTimeout(() => {
-            if (!cancelled) {
-              setLoading(false)
+          setProgress(95)
+          
+          // Verify it's actually cached
+          const verifyCache = useGLTF.cache || new Map()
+          if (verifyCache.has(modelUrl)) {
+            setProgress(100)
+            
+            // Wait longer to ensure drei's system is fully ready
+            setTimeout(() => {
+              if (!cancelled) {
+                setLoading(false)
+              }
+            }, 3000)
+          } else {
+            // Not cached yet, wait and check again
+            let attempts = 0
+            const checkCache = () => {
+              attempts++
+              const checkCacheAgain = useGLTF.cache || new Map()
+              if (checkCacheAgain.has(modelUrl)) {
+                setProgress(100)
+                setTimeout(() => {
+                  if (!cancelled) {
+                    setLoading(false)
+                  }
+                }, 3000)
+              } else if (attempts < 10) {
+                setTimeout(checkCache, 500)
+              } else {
+                // Give up after 5 seconds
+                setProgress(100)
+                setTimeout(() => {
+                  if (!cancelled) {
+                    setLoading(false)
+                  }
+                }, 3000)
+              }
             }
-          }, 2000)
+            setTimeout(checkCache, 500)
+          }
         } catch (preloadErr) {
           console.error('Preload error:', preloadErr)
+          // Even if preload fails, wait and hope it cached
           setProgress(100)
           setTimeout(() => {
             if (!cancelled) {
               setLoading(false)
             }
-          }, 2000)
+          }, 3000)
         }
       } catch (err) {
         if (!cancelled) {
