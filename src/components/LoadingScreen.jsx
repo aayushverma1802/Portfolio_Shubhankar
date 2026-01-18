@@ -41,9 +41,10 @@ const LoadingScreen = ({ onComplete }) => {
     } else {
       setProgress(100)
       setLoadingText(loadingMessages[3])
+      // Extra delay to ensure model is fully cached before scene renders
       setTimeout(() => {
         if (onComplete) onComplete()
-      }, 500)
+      }, 800)
     }
   }, [modelLoading, modelProgress, isCached, onComplete])
 
