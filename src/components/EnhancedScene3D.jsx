@@ -15,20 +15,16 @@ function F1CarModel({ position, modelUrl, reverseDirection = false, scale = 0.15
   const scrollRef = useRef(0)
   
   // Load the GLTF model with caching
-  // Model should be preloaded by LoadingScreen, so this should be instant
-  let gltfResult
-  try {
-    gltfResult = useGLTF(modelUrl || '/models/f1-car.glb')
-  } catch (err) {
-    console.error('useGLTF error:', err)
-    return null
-  }
+  const modelPath = modelUrl || '/models/f1-car.glb'
   
-  const { scene } = gltfResult || {}
+  // Log model path for debugging (only in development)
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Loading 3D model from:', modelPath)
+    }
+  }, [modelPath])
   
-  if (!scene) {
-    return null
-  }
+  const { scene } = useGLTF(modelPath)
 
   // Find wheels and other parts for animation (memoized)
   const wheelsRef = useRef([])
@@ -271,7 +267,13 @@ class ErrorBoundary extends React.Component {
   }
 
   componentDidCatch(error, errorInfo) {
-    console.log('3D Model loading error (this is normal if model file is missing):', error)
+    console.error('3D Model loading error:', error)
+    console.error('Error info:', errorInfo)
+    console.error('Model URL:', this.props.modelUrl || '/models/f1-car.glb')
+    // Log additional debugging info
+    if (error.message) {
+      console.error('Error message:', error.message)
+    }
   }
 
   render() {

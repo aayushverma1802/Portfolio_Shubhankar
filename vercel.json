@@ -1,23 +1,30 @@
 {
   "headers": [
     {
-      "source": "/models/(.*)",
+      "source": "/models/(.*\\.glb)",
       "headers": [
         {
           "key": "Cache-Control",
           "value": "public, max-age=31536000, immutable"
         },
         {
-          "key": "Content-Encoding",
-          "value": "gzip"
+          "key": "Content-Type",
+          "value": "model/gltf-binary"
         }
       ]
-    }
-  ],
-  "rewrites": [
+    },
     {
-      "source": "/models/:path*",
-      "destination": "/models/:path*"
+      "source": "/models/(.*\\.gltf)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        },
+        {
+          "key": "Content-Type",
+          "value": "model/gltf+json"
+        }
+      ]
     }
   ]
 }
