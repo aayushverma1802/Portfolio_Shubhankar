@@ -1,13 +1,11 @@
 import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { Cpu, Sparkles } from 'lucide-react'
 import { useModelPreloader } from '../hooks/useModelLoader'
 
 const LoadingScreen = ({ onComplete }) => {
   const [progress, setProgress] = useState(0)
   const [loadingText, setLoadingText] = useState('Initializing...')
   
-  // Actually load the model and track real progress
   const { loading: modelLoading, progress: modelProgress, error: modelError } = useModelPreloader('/models/f1-car.glb')
 
   const loadingMessages = [
@@ -17,23 +15,21 @@ const LoadingScreen = ({ onComplete }) => {
     'Almost ready...',
   ]
 
-  // Update progress based on actual model loading
   useEffect(() => {
     if (modelLoading) {
-      setProgress(modelProgress)
+      const currentProgress = Math.max(5, modelProgress)
+      setProgress(currentProgress)
       
-      // Update loading message based on progress
-      if (modelProgress < 25) {
+      if (currentProgress < 25) {
         setLoadingText(loadingMessages[0])
-      } else if (modelProgress < 60) {
+      } else if (currentProgress < 60) {
         setLoadingText(loadingMessages[1])
-      } else if (modelProgress < 90) {
+      } else if (currentProgress < 90) {
         setLoadingText(loadingMessages[2])
       } else {
         setLoadingText(loadingMessages[3])
       }
     } else {
-      // Model loaded, complete loading
       setProgress(100)
       setLoadingText(loadingMessages[3])
       setTimeout(() => {
@@ -42,11 +38,9 @@ const LoadingScreen = ({ onComplete }) => {
     }
   }, [modelLoading, modelProgress, onComplete])
 
-  // Handle model loading errors gracefully
   useEffect(() => {
     if (modelError) {
       console.warn('Model loading error, continuing anyway:', modelError)
-      // Still allow the app to load even if model fails
       setTimeout(() => {
         if (onComplete) onComplete()
       }, 1000)
@@ -54,9 +48,9 @@ const LoadingScreen = ({ onComplete }) => {
   }, [modelError, onComplete])
 
   return (
-    <div className="fixed inset-0 bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900 flex items-center justify-center z-50 overflow-hidden">
-      {/* Animated Background Elements */}
-      <div className="absolute inset-0 overflow-hidden">
+    <div className="fixed inset-0 bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900 flex items-center justify-center z-50">
+      {/* Background */}
+      <div className="absolute inset-0">
         <motion.div
           className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl"
           animate={{
@@ -85,150 +79,90 @@ const LoadingScreen = ({ onComplete }) => {
         />
       </div>
 
-      {/* Main Content */}
-      <div className="relative z-10 text-center w-full max-w-lg px-6">
-        {/* Logo/Icon Container */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.5, y: -50 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-          className="mb-12 flex justify-center"
-        >
-          <div className="relative">
-            {/* Outer ring */}
-            <motion.div
-              className="absolute inset-0 rounded-full border-2 border-blue-500/30"
-              animate={{ rotate: 360 }}
-              transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
-            />
-            {/* Inner icon */}
-            <div className="relative w-20 h-20 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-2xl shadow-blue-500/50">
-              <Cpu className="w-10 h-10 text-white" />
-            </div>
-            {/* Sparkle effects */}
-            <motion.div
-              className="absolute -top-2 -right-2"
-              animate={{ rotate: 360, scale: [1, 1.2, 1] }}
-              transition={{ duration: 2, repeat: Infinity }}
-            >
-              <Sparkles className="w-6 h-6 text-yellow-400" />
-            </motion.div>
-          </div>
-        </motion.div>
-
+      {/* Content */}
+      <div className="relative z-10 w-full max-w-xl px-6">
         {/* Title */}
-        <motion.h1
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3, duration: 0.6 }}
-          className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-blue-400 via-purple-400 to-blue-400 bg-clip-text text-transparent"
-          style={{
-            backgroundSize: '200% 100%',
-            animation: 'shimmer 3s infinite',
-          }}
-        >
+        <h1 className="text-4xl md:text-5xl font-bold mb-12 text-center bg-gradient-to-r from-blue-400 via-purple-400 to-blue-400 bg-clip-text text-transparent">
           Portfolio
-        </motion.h1>
+        </h1>
 
-        {/* Loading Status Text */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.5, duration: 0.6 }}
-          className="mb-10"
-        >
-          <motion.p
-            key={loadingText}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.3 }}
-            className="text-gray-300 text-lg font-medium tracking-wide"
-          >
+        {/* Loading Text */}
+        <div className="mb-10 text-center">
+          <p className="text-gray-300 text-lg font-medium">
             {loadingText}
-          </motion.p>
-        </motion.div>
+          </p>
+        </div>
 
-        {/* Loading Bar Container */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6, duration: 0.6 }}
-          className="w-full"
-        >
-          {/* Progress Bar Track */}
-          <div className="relative w-full h-3 bg-gray-800/50 rounded-full overflow-hidden border border-gray-700/50 backdrop-blur-sm shadow-inner">
-            {/* Glow effect */}
+        {/* Progress Bar Container */}
+        <div className="relative w-full">
+          <div className="relative w-full h-10 bg-gray-800/50 rounded-full border border-gray-700/50 overflow-visible">
+            {/* Progress Fill - smooth animation */}
             <motion.div
-              className="absolute inset-0 bg-gradient-to-r from-blue-500/20 via-purple-500/20 to-blue-500/20"
-              animate={{
-                x: ['-100%', '100%'],
+              className="absolute left-0 top-0 h-full bg-gradient-to-r from-blue-500 via-purple-500 to-blue-500 rounded-full overflow-hidden"
+              initial={{ width: '5%' }}
+              animate={{ width: `${Math.max(5, progress)}%` }}
+              transition={{ 
+                duration: 0.3,
+                ease: [0.4, 0, 0.2, 1] // smooth cubic bezier
               }}
-              transition={{
-                duration: 2,
-                repeat: Infinity,
-                ease: 'linear',
-              }}
-            />
-            
-            {/* Progress Fill */}
-            <motion.div
-              className="relative h-full loading-bar-shimmer rounded-full overflow-hidden"
-              initial={{ width: 0 }}
-              animate={{ width: `${progress}%` }}
-              transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
             >
-              {/* Inner glow */}
-              <div className="absolute inset-0 bg-gradient-to-r from-blue-500 via-purple-500 to-blue-500 opacity-90" />
-              <div className="absolute inset-0 bg-gradient-to-t from-transparent via-white/20 to-transparent" />
+              <motion.div
+                className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent rounded-full"
+                animate={{
+                  x: ['-100%', '100%'],
+                }}
+                transition={{
+                  duration: 1.5,
+                  repeat: Infinity,
+                  ease: 'linear',
+                }}
+              />
+            </motion.div>
+
+            {/* F1 Car - smooth movement with progress */}
+            <motion.div
+              className="absolute text-4xl pointer-events-none z-10"
+              style={{
+                top: '50%',
+                left: `${Math.max(5, progress)}%`,
+                marginLeft: '-1.5rem',
+                transform: 'translateY(-50%) scaleX(-1)', // Flip to face right
+                filter: 'drop-shadow(0 0 10px rgba(59, 130, 246, 0.8))',
+              }}
+              initial={{ left: 'calc(5% - 1.5rem)' }}
+              animate={{ 
+                left: `calc(${Math.max(5, progress)}% - 1.5rem)`,
+              }}
+              transition={{ 
+                duration: 0.3,
+                ease: [0.4, 0, 0.2, 1]
+              }}
+            >
+              🏎️
             </motion.div>
           </div>
-          
-          {/* Progress Percentage */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.8 }}
-            className="flex items-center justify-between mt-4"
-          >
-            <span className="text-gray-500 text-xs font-medium tracking-wider uppercase">
-              Progress
-            </span>
-            <motion.span
-              key={Math.round(progress)}
-              initial={{ scale: 1.2 }}
-              animate={{ scale: 1 }}
-              className="text-white text-lg font-bold tabular-nums"
-            >
-              {Math.round(progress)}%
-            </motion.span>
-          </motion.div>
-        </motion.div>
 
-        {/* Decorative Elements */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1 }}
-          className="mt-12 flex justify-center gap-2"
-        >
-          {[0, 1, 2].map((i) => (
-            <motion.div
-              key={i}
-              className="w-2 h-2 rounded-full bg-blue-500/50"
-              animate={{
-                scale: [1, 1.5, 1],
-                opacity: [0.5, 1, 0.5],
-              }}
-              transition={{
-                duration: 1.5,
-                repeat: Infinity,
-                delay: i * 0.2,
-                ease: 'easeInOut',
-              }}
-            />
-          ))}
-        </motion.div>
+          {/* Progress Text */}
+          <div className="flex justify-between items-center mt-4">
+            <span className="text-gray-500 text-sm uppercase font-medium">
+              Loading
+            </span>
+            <span className="text-white text-xl font-bold">
+              {Math.round(progress)}%
+            </span>
+          </div>
+        </div>
+
+        {/* Checkered Flag */}
+        {progress >= 90 && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="absolute top-4 right-4 text-5xl"
+          >
+            🏁
+          </motion.div>
+        )}
       </div>
     </div>
   )
