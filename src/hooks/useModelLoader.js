@@ -3,7 +3,7 @@ import { useGLTF } from '@react-three/drei'
 
 /**
  * Hook to preload and track loading progress of GLB models
- * Shows REAL progress based on actual download, not hardcoded time
+ * Shows REAL progress based on actual download
  */
 export function useModelPreloader(modelUrl) {
   const [loading, setLoading] = useState(true)
@@ -38,7 +38,7 @@ export function useModelPreloader(modelUrl) {
       }
     }
 
-    // Start drei's preload in background
+    // Start drei's preload FIRST - critical for caching
     const preloadPromise = useGLTF.preload(modelUrl)
     
     // Track download with XHR for REAL progress
@@ -51,11 +51,9 @@ export function useModelPreloader(modelUrl) {
     xhr.addEventListener('progress', (e) => {
       if (cancelled) return
       if (e.lengthComputable && e.total > 0) {
-        // Download: 5% to 90% based on actual bytes
         const downloadProgress = 5 + (e.loaded / e.total) * 85
         setProgress(Math.min(90, downloadProgress))
       } else if (e.loaded > 0) {
-        // Estimate if total unknown
         const estimatedProgress = Math.min(90, 5 + (e.loaded / 18000000) * 85)
         setProgress(estimatedProgress)
       }
@@ -67,49 +65,52 @@ export function useModelPreloader(modelUrl) {
       try {
         setProgress(92)
 
-        // Wait for drei's preload to complete - this is REAL progress
+        // CRITICAL: Wait for drei's preload to complete
         try {
           await preloadPromise
           setProgress(95)
 
-          // Verify cache - REAL check, not time-based
+          // Verify model is actually accessible
           const verifyCache = useGLTF.cache || new Map()
-          if (verifyCache.has(modelUrl)) {
+          const cachedModel = verifyCache.get(modelUrl)
+          
+          if (cachedModel && cachedModel.scene) {
+            // Model is cached and has scene - ready!
             setProgress(100)
-            // Only wait a tiny bit for drei to be ready
             setTimeout(() => {
               if (!cancelled) {
                 setLoading(false)
               }
-            }, 500)
+            }, 800)
           } else {
-            // Not cached yet, check periodically until it is
+            // Not ready yet, keep checking
             let attempts = 0
-            const checkCache = () => {
+            const checkReady = () => {
               if (cancelled) return
               attempts++
-              const checkAgain = useGLTF.cache || new Map()
-              if (checkAgain.has(modelUrl)) {
+              const checkCache = useGLTF.cache || new Map()
+              const model = checkCache.get(modelUrl)
+              
+              if (model && model.scene) {
                 setProgress(100)
                 setTimeout(() => {
                   if (!cancelled) {
                     setLoading(false)
                   }
-                }, 500)
-              } else if (attempts < 20) {
-                // Keep checking until cached - this is REAL progress
-                setTimeout(checkCache, 200)
+                }, 800)
+              } else if (attempts < 25) {
+                setTimeout(checkReady, 300)
               } else {
-                // After many attempts, proceed anyway
+                // Give up after many attempts
                 setProgress(100)
                 setTimeout(() => {
                   if (!cancelled) {
                     setLoading(false)
                   }
-                }, 500)
+                }, 800)
               }
             }
-            setTimeout(checkCache, 200)
+            setTimeout(checkReady, 300)
           }
         } catch (preloadErr) {
           console.error('Preload error:', preloadErr)
@@ -118,7 +119,7 @@ export function useModelPreloader(modelUrl) {
             if (!cancelled) {
               setLoading(false)
             }
-          }, 500)
+          }, 1000)
         }
       } catch (err) {
         if (!cancelled) {
