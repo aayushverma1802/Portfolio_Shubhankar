@@ -1,6 +1,6 @@
-import React, { Suspense } from 'react'
+import React, { Suspense, useState } from 'react'
 import { Canvas } from '@react-three/fiber'
-import { OrbitControls, PerspectiveCamera, Environment } from '@react-three/drei'
+import { OrbitControls, PerspectiveCamera, PerformanceMonitor } from '@react-three/drei'
 import Hero from './components/Hero'
 import About from './components/About'
 import Projects from './components/Projects'
@@ -10,21 +10,23 @@ import Navigation from './components/Navigation'
 import EnhancedScene3D from './components/EnhancedScene3D'
 import ScrollCamera from './components/ScrollCamera'
 import LoadingScreen from './components/LoadingScreen'
-import { useState, useEffect } from 'react'
 
 function App() {
   const [loading, setLoading] = useState(true)
+  // Initialize DPR based on device pixel ratio, capped at 2 for performance
+  const [dpr, setDpr] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return Math.min(window.devicePixelRatio || 1, 2)
+    }
+    return 1.5
+  })
 
-  useEffect(() => {
-    // Simulate loading time
-    const timer = setTimeout(() => {
-      setLoading(false)
-    }, 2000)
-    return () => clearTimeout(timer)
-  }, [])
+  const handleLoadingComplete = () => {
+    setLoading(false)
+  }
 
   if (loading) {
-    return <LoadingScreen />
+    return <LoadingScreen onComplete={handleLoadingComplete} />
   }
 
   return (
@@ -34,11 +36,29 @@ function App() {
       {/* 3D Background Scene */}
       <div className="fixed inset-0 z-0">
         <Canvas
-          gl={{ antialias: true, alpha: true, powerPreference: "high-performance" }}
-          dpr={[1, 2]}
-          performance={{ min: 0.5 }}
+          gl={{ 
+            antialias: true,
+            alpha: true, 
+            powerPreference: "high-performance",
+            stencil: false,
+            depth: true,
+            logarithmicDepthBuffer: false,
+            precision: "highp",
+            preserveDrawingBuffer: false
+          }}
+          dpr={dpr}
+          performance={{ min: 0.5, max: 1 }}
           camera={{ position: [0, 0, 5], fov: 75 }}
+          frameloop="always"
+          shadows={false}
+          flat={false}
         >
+          <PerformanceMonitor
+            onIncline={() => setDpr(Math.min(dpr + 0.5, 2))}
+            onDecline={() => setDpr(Math.max(dpr - 0.5, 1))}
+            flipflops={3}
+            threshold={0.5}
+          />
           <Suspense fallback={null}>
             <PerspectiveCamera makeDefault position={[0, 0, 5]} />
             <OrbitControls
@@ -48,8 +68,9 @@ function App() {
               autoRotate={false}
               minPolarAngle={Math.PI / 6}
               maxPolarAngle={Math.PI / 1.5}
+              dampingFactor={0.05}
+              enableDamping={true}
             />
-            <Environment preset="sunset" />
             <ScrollCamera />
             <EnhancedScene3D />
           </Suspense>

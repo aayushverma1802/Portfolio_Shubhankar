@@ -1,7 +1,7 @@
-import React from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { motion } from 'framer-motion'
 import { useInView } from 'react-intersection-observer'
-import { Award, Target, Zap, Users } from 'lucide-react'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 
 const About = () => {
   const [ref, inView] = useInView({
@@ -9,31 +9,132 @@ const About = () => {
     threshold: 0.1,
   })
 
-  const stats = [
-    { icon: Award, value: '50+', label: 'Projects Completed' },
-    { icon: Target, value: '10+', label: 'Years Experience' },
-    { icon: Zap, value: '100%', label: 'Client Satisfaction' },
-    { icon: Users, value: '30+', label: 'Team Collaborations' },
-  ]
+  const [currentIndex, setCurrentIndex] = useState(0)
+  const [isPaused, setIsPaused] = useState(false)
+  const intervalRef = useRef(null)
+  const pauseTimeoutRef = useRef(null)
+  const carouselRef = useRef(null)
+  const isTransitioningRef = useRef(false)
 
   const achievements = [
     {
-      title: 'Advanced CAD Design',
-      description: 'Expert in SolidWorks, AutoCAD, and Fusion 360 with extensive experience in product design and prototyping.',
+      title: 'CAD Design',
+      description: 'Expert in computer-aided design with extensive experience in product design and engineering.',
     },
     {
-      title: 'Mechanical Systems',
-      description: 'Design and optimization of complex mechanical systems including robotics, automation, and manufacturing equipment.',
+      title: 'FEA Analysis',
+      description: 'Finite Element Analysis for structural and mechanical system optimization.',
     },
     {
-      title: '3D Modeling & Visualization',
-      description: 'Creating detailed 3D models and renderings for product development and client presentations.',
+      title: 'Computational Fluid Dynamics',
+      description: 'Advanced CFD analysis for fluid flow, heat transfer, and aerodynamics.',
     },
     {
-      title: 'Project Management',
-      description: 'Leading cross-functional teams to deliver innovative engineering solutions on time and within budget.',
+      title: 'Additive Manufacturing',
+      description: 'Expertise in 3D printing and rapid prototyping technologies.',
+    },
+    {
+      title: 'Patent Drafting',
+      description: 'Professional patent application drafting and technical documentation.',
+    },
+    {
+      title: 'Patent Prosecution',
+      description: 'Managing patent applications through the examination and approval process.',
     },
   ]
+
+  // Calculate total slides (showing 3 at a time)
+  const totalSlides = Math.ceil(achievements.length / 3) // For 6 items showing 3 at a time, we have 2 slides
+
+  // Duplicate achievements for infinite loop
+  const duplicatedAchievements = [...achievements, ...achievements]
+
+  // Function to resume auto-rotation after a delay
+  const resumeAutoRotate = () => {
+    if (pauseTimeoutRef.current) {
+      clearTimeout(pauseTimeoutRef.current)
+    }
+    setIsPaused(true)
+    pauseTimeoutRef.current = setTimeout(() => {
+      setIsPaused(false)
+    }, 3000) // Resume after 3 seconds
+  }
+
+  // Navigation functions - move by slides (3 cards at a time)
+  const goToNext = () => {
+    setCurrentIndex((prevIndex) => {
+      const nextIndex = prevIndex + 3
+      return nextIndex >= achievements.length ? 0 : nextIndex
+    })
+    resumeAutoRotate()
+  }
+
+  const goToPrev = () => {
+    setCurrentIndex((prevIndex) => {
+      const prevIndexNew = prevIndex - 3
+      return prevIndexNew < 0 ? achievements.length - 3 : prevIndexNew
+    })
+    resumeAutoRotate()
+  }
+
+  const goToSlide = (slideIndex) => {
+    const newIndex = slideIndex * 3
+    setCurrentIndex(newIndex)
+    resumeAutoRotate()
+  }
+
+  // Handle seamless reset when reaching end
+  useEffect(() => {
+    if (currentIndex >= achievements.length && carouselRef.current && !isTransitioningRef.current) {
+      isTransitioningRef.current = true
+      // Wait for current transition to finish, then reset seamlessly
+      const resetTimer = setTimeout(() => {
+        if (carouselRef.current) {
+          carouselRef.current.style.transition = 'none'
+          setCurrentIndex(0)
+          // Re-enable transition after a brief moment
+          setTimeout(() => {
+            if (carouselRef.current) {
+              carouselRef.current.style.transition = 'transform 0.5s ease-in-out'
+              isTransitioningRef.current = false
+            }
+          }, 50)
+        }
+      }, 500)
+      return () => clearTimeout(resetTimer)
+    }
+  }, [currentIndex, achievements.length])
+
+  // Auto-rotate carousel - move by slides (3 cards at a time)
+  useEffect(() => {
+    // Clear any existing interval
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current)
+      intervalRef.current = null
+    }
+
+    // Start auto-rotation if not paused and section is in view
+    if (!isPaused && inView) {
+      intervalRef.current = setInterval(() => {
+        setCurrentIndex((prevIndex) => {
+          const nextIndex = prevIndex + 3
+          // Move forward, reset will be handled by useEffect above
+          return nextIndex >= achievements.length ? achievements.length : nextIndex
+        })
+      }, 2000)
+    }
+
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current)
+        intervalRef.current = null
+      }
+      if (pauseTimeoutRef.current) {
+        clearTimeout(pauseTimeoutRef.current)
+        pauseTimeoutRef.current = null
+      }
+    }
+  }, [isPaused, inView, achievements.length])
 
   return (
     <section
@@ -56,11 +157,12 @@ const About = () => {
           </p>
         </motion.div>
 
-        <div className="grid md:grid-cols-2 gap-12 mb-16">
+        <div className="mb-16">
           <motion.div
             initial={{ opacity: 0, x: -30 }}
             animate={inView ? { opacity: 1, x: 0 } : {}}
             transition={{ delay: 0.2, duration: 0.8 }}
+            className="max-w-4xl mx-auto"
           >
             <h3 className="text-2xl font-bold mb-4 text-white">My Journey</h3>
             <p className="text-gray-300 mb-4 leading-relaxed">
@@ -81,28 +183,6 @@ const About = () => {
               adapting to new technologies, keeping my skills at the forefront of the industry.
             </p>
           </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, x: 30 }}
-            animate={inView ? { opacity: 1, x: 0 } : {}}
-            transition={{ delay: 0.4, duration: 0.8 }}
-            className="grid grid-cols-2 gap-6"
-          >
-            {stats.map((stat, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={inView ? { opacity: 1, scale: 1 } : {}}
-                transition={{ delay: 0.6 + index * 0.1, duration: 0.5 }}
-                whileHover={{ scale: 1.05 }}
-                className="bg-gray-900/50 backdrop-blur-sm p-6 rounded-lg border border-gray-800 text-center"
-              >
-                <stat.icon className="w-8 h-8 text-blue-500 mx-auto mb-3" />
-                <div className="text-3xl font-bold text-white mb-1">{stat.value}</div>
-                <div className="text-gray-400 text-sm">{stat.label}</div>
-              </motion.div>
-            ))}
-          </motion.div>
         </div>
 
         <motion.div
@@ -111,20 +191,115 @@ const About = () => {
           transition={{ delay: 0.6, duration: 0.8 }}
         >
           <h3 className="text-2xl font-bold mb-8 text-center text-white">Key Expertise</h3>
-          <div className="grid md:grid-cols-2 gap-6">
-            {achievements.map((achievement, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, y: 20 }}
-                animate={inView ? { opacity: 1, y: 0 } : {}}
-                transition={{ delay: 0.8 + index * 0.1, duration: 0.6 }}
-                whileHover={{ scale: 1.02 }}
-                className="bg-gray-900/50 backdrop-blur-sm p-6 rounded-lg border border-gray-800"
+          <div 
+            className="relative overflow-hidden w-full"
+            style={{ 
+              width: '100%',
+              maxWidth: '100%'
+            }}
+            onMouseEnter={() => {
+              setIsPaused(true)
+              if (pauseTimeoutRef.current) {
+                clearTimeout(pauseTimeoutRef.current)
+              }
+            }}
+            onMouseLeave={() => {
+              setIsPaused(false)
+              if (pauseTimeoutRef.current) {
+                clearTimeout(pauseTimeoutRef.current)
+              }
+            }}
+          >
+            {/* Left Arrow */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                goToPrev()
+              }}
+              className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-gray-900/80 hover:bg-gray-800 rounded-full p-2 transition-all"
+              aria-label="Previous slide"
+            >
+              <ChevronLeft className="w-6 h-6 text-white" />
+            </button>
+
+            {/* Right Arrow */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                goToNext()
+              }}
+              className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-gray-900/80 hover:bg-gray-800 rounded-full p-2 transition-all"
+              aria-label="Next slide"
+            >
+              <ChevronRight className="w-6 h-6 text-white" />
+            </button>
+
+            <div className="px-12">
+              <div 
+                ref={carouselRef}
+                className="flex transition-transform duration-500 ease-in-out"
+                style={{ 
+                  transform: `translateX(calc(-${currentIndex} * ((100% - 3rem) / 3 + 1.5rem)))`,
+                  willChange: 'transform',
+                  gap: '1.5rem'
+                }}
+                onClick={() => {
+                  if (pauseTimeoutRef.current) {
+                    clearTimeout(pauseTimeoutRef.current)
+                  }
+                  setIsPaused(true)
+                  pauseTimeoutRef.current = setTimeout(() => {
+                    setIsPaused(false)
+                  }, 3000)
+                }}
               >
-                <h4 className="text-xl font-semibold text-white mb-3">{achievement.title}</h4>
-                <p className="text-gray-300">{achievement.description}</p>
-              </motion.div>
-            ))}
+                {duplicatedAchievements.map((achievement, index) => {
+                  const cardNumber = (index % achievements.length) + 1
+                  return (
+                    <motion.div
+                      key={index}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={inView ? { opacity: 1, y: 0 } : {}}
+                      transition={{ delay: 0.8 + (index % achievements.length) * 0.1, duration: 0.6 }}
+                      whileHover={{ scale: 1.02 }}
+                      className="bg-gray-900/50 backdrop-blur-sm p-6 rounded-lg border border-gray-800 flex-shrink-0 cursor-pointer"
+                      style={{ 
+                        width: 'calc((100% - 3rem) / 3)',
+                        flexShrink: 0
+                      }}
+                    >
+                      <h4 className="text-xl font-semibold text-white mb-3">{cardNumber}. {achievement.title}</h4>
+                      <p className="text-gray-300">{achievement.description}</p>
+                    </motion.div>
+                  )
+                })}
+              </div>
+            </div>
+
+            {/* Dots Indicator with Numbers */}
+            <div className="flex justify-center gap-3 mt-6">
+              {Array.from({ length: totalSlides }).map((_, index) => {
+                const slideStartIndex = index * 3
+                const isActive = currentIndex === slideStartIndex
+                return (
+                  <button
+                    key={index}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      goToSlide(index)
+                    }}
+                    className={`transition-all duration-300 rounded-full flex items-center justify-center font-semibold ${
+                      isActive
+                        ? 'bg-blue-500 w-10 h-10 text-white'
+                        : 'bg-gray-600 w-10 h-10 text-gray-300 hover:bg-gray-500'
+                    }`}
+                    aria-label={`Go to slide ${index + 1}`}
+                  >
+                    {index + 1}
+                  </button>
+                )
+              })}
+            </div>
           </div>
         </motion.div>
       </div>

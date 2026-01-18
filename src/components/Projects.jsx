@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useInView } from 'react-intersection-observer'
-import { ExternalLink, Github, X } from 'lucide-react'
+import { ExternalLink, X } from 'lucide-react'
 
 const Projects = () => {
   const [ref, inView] = useInView({
@@ -26,7 +26,6 @@ const Projects = () => {
         'Repeatability: ±0.1mm',
       ],
       link: '#',
-      github: '#',
     },
     {
       id: 2,
@@ -42,7 +41,6 @@ const Projects = () => {
         'Enhanced heat transfer',
       ],
       link: '#',
-      github: '#',
     },
     {
       id: 3,
@@ -58,7 +56,6 @@ const Projects = () => {
         'Durability testing completed',
       ],
       link: '#',
-      github: '#',
     },
     {
       id: 4,
@@ -74,7 +71,6 @@ const Projects = () => {
         'Cost-effective solution',
       ],
       link: '#',
-      github: '#',
     },
     {
       id: 5,
@@ -90,7 +86,6 @@ const Projects = () => {
         'Cost optimization',
       ],
       link: '#',
-      github: '#',
     },
     {
       id: 6,
@@ -106,7 +101,6 @@ const Projects = () => {
         'Manufacturing feasibility',
       ],
       link: '#',
-      github: '#',
     },
   ]
 
@@ -176,13 +170,6 @@ const Projects = () => {
                     className="text-blue-400 hover:text-blue-300 transition-colors"
                   >
                     <ExternalLink size={20} />
-                  </motion.a>
-                  <motion.a
-                    href={project.github}
-                    whileHover={{ scale: 1.1 }}
-                    className="text-gray-400 hover:text-white transition-colors"
-                  >
-                    <Github size={20} />
                   </motion.a>
                 </div>
               </div>
@@ -266,15 +253,6 @@ const Projects = () => {
                   >
                     <ExternalLink size={20} />
                     View Project
-                  </motion.a>
-                  <motion.a
-                    href={selectedProject.github}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    className="px-6 py-3 bg-gray-800 border border-gray-700 rounded-lg font-semibold text-white flex items-center gap-2"
-                  >
-                    <Github size={20} />
-                    View Code
                   </motion.a>
                 </div>
               </div>

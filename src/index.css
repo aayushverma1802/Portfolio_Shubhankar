@@ -8,6 +8,24 @@
   box-sizing: border-box;
 }
 
+/* Performance optimizations */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Optimize rendering for better performance */
+section {
+  contain: layout style;
+  transform: translateZ(0);
+  overflow: visible;
+}
+
+/* Fix text clipping in contact section */
+#contact {
+  overflow: visible !important;
+  contain: none;
+}
+
 html {
   scroll-behavior: smooth;
 }
@@ -23,6 +41,12 @@ body {
 
 canvas {
   display: block;
+  /* GPU acceleration and performance optimizations */
+  will-change: transform;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  image-rendering: auto; /* Changed from optimizeSpeed to auto for better quality */
 }
 
 /* Custom scrollbar */
@@ -43,18 +67,46 @@ canvas {
   background: #2563eb;
 }
 
-/* Smooth fade-in animations */
+/* Smooth fade-in animations - GPU accelerated */
 @keyframes fadeIn {
   from {
     opacity: 0;
-    transform: translateY(20px);
+    transform: translateY(20px) translateZ(0);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) translateZ(0);
   }
 }
 
 .fade-in {
   animation: fadeIn 0.8s ease-out;
+  will-change: transform, opacity;
+}
+
+/* Loading bar shimmer animation */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.loading-bar-shimmer {
+  background: linear-gradient(90deg, #3b82f6 0%, #8b5cf6 50%, #3b82f6 100%);
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite;
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.5), 0 0 40px rgba(139, 92, 246, 0.3);
+}
+
+/* Text shimmer animation */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
 }
