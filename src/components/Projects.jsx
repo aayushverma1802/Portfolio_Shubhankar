@@ -111,24 +111,24 @@ const Projects = () => {
     <section
       id="projects"
       ref={ref}
-      className="min-h-screen py-20 px-6 relative bg-black/40 backdrop-blur-sm"
+      className="min-h-screen py-8 sm:py-12 md:py-20 px-4 sm:px-6 relative bg-black/40 backdrop-blur-sm"
     >
       <div className="container mx-auto max-w-7xl">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={inView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.8 }}
-          className="text-center mb-16"
+          className="text-center mb-8 sm:mb-12 md:mb-16"
         >
-          <h2 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-blue-400 to-purple-600 bg-clip-text text-transparent">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-2 sm:mb-4 bg-gradient-to-r from-blue-400 to-purple-600 bg-clip-text text-transparent px-4">
             Featured Projects
           </h2>
-          <p className="text-gray-400 text-lg max-w-2xl mx-auto">
+          <p className="text-gray-400 text-sm sm:text-base md:text-lg max-w-2xl mx-auto px-4">
             Showcasing innovative engineering solutions and design excellence
           </p>
         </motion.div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
           {projects.map((project, index) => (
             <motion.div
               key={project.id}
@@ -136,10 +136,10 @@ const Projects = () => {
               animate={inView ? { opacity: 1, y: 0 } : {}}
               transition={{ delay: index * 0.1, duration: 0.6 }}
               whileHover={{ y: -5 }}
-              className="bg-gray-900/50 backdrop-blur-sm rounded-lg overflow-hidden border border-gray-800 cursor-pointer group"
+              className="bg-gray-900/50 backdrop-blur-sm rounded-lg overflow-hidden border border-gray-800 cursor-pointer group w-full"
               onClick={() => setSelectedProject(project)}
             >
-              <div className="relative h-48 overflow-hidden">
+              <div className="relative h-40 sm:h-44 md:h-48 overflow-hidden">
                 <img
                   src={project.image}
                   alt={project.title}
@@ -147,20 +147,20 @@ const Projects = () => {
                   loading="lazy"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
-                <div className="absolute bottom-4 left-4">
-                  <span className="px-3 py-1 bg-blue-500/80 backdrop-blur-sm rounded-full text-xs font-semibold text-white">
+                <div className="absolute bottom-2 sm:bottom-4 left-2 sm:left-4">
+                  <span className="px-2 sm:px-3 py-1 bg-blue-500/80 backdrop-blur-sm rounded-full text-[10px] sm:text-xs font-semibold text-white">
                     {project.category}
                   </span>
                 </div>
               </div>
-              <div className="p-6">
-                <h3 className="text-xl font-bold text-white mb-2">{project.title}</h3>
-                <p className="text-gray-400 text-sm mb-4 line-clamp-2">{project.description}</p>
-                <div className="flex flex-wrap gap-2 mb-4">
+              <div className="p-4 sm:p-5 md:p-6">
+                <h3 className="text-base sm:text-lg md:text-xl font-bold text-white mb-1 sm:mb-2 line-clamp-2">{project.title}</h3>
+                <p className="text-gray-400 text-xs sm:text-sm mb-3 sm:mb-4 line-clamp-2">{project.description}</p>
+                <div className="flex flex-wrap gap-1.5 sm:gap-2 mb-3 sm:mb-4">
                   {project.technologies.slice(0, 3).map((tech, techIndex) => (
                     <span
                       key={techIndex}
-                      className="px-2 py-1 bg-gray-800 text-xs text-gray-300 rounded"
+                      className="px-1.5 sm:px-2 py-0.5 sm:py-1 bg-gray-800 text-[10px] sm:text-xs text-gray-300 rounded"
                     >
                       {tech}
                     </span>
@@ -172,10 +172,11 @@ const Projects = () => {
                     target={project.isPdf ? "_blank" : undefined}
                     rel={project.isPdf ? "noopener noreferrer" : undefined}
                     whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.95 }}
                     className="text-blue-400 hover:text-blue-300 transition-colors"
                     onClick={(e) => project.isPdf && e.stopPropagation()}
                   >
-                    <ExternalLink size={20} />
+                    <ExternalLink size={18} className="sm:w-5 sm:h-5" />
                   </motion.a>
                 </div>
               </div>
@@ -191,7 +192,7 @@ const Projects = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-sm"
+            className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/90 backdrop-blur-sm"
             onClick={() => setSelectedProject(null)}
           >
             <motion.div
@@ -199,9 +200,9 @@ const Projects = () => {
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-gray-900 rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto border border-gray-800"
+              className="bg-gray-900 rounded-lg max-w-4xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto border border-gray-800 m-2 sm:m-0"
             >
-              <div className="relative h-64 overflow-hidden">
+              <div className="relative h-40 sm:h-48 md:h-64 overflow-hidden">
                 <img
                   src={selectedProject.image}
                   alt={selectedProject.title}
@@ -210,39 +211,39 @@ const Projects = () => {
                 />
                 <button
                   onClick={() => setSelectedProject(null)}
-                  className="absolute top-4 right-4 w-10 h-10 bg-black/50 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-black/70 transition-colors"
+                  className="absolute top-2 right-2 sm:top-4 sm:right-4 w-8 h-8 sm:w-10 sm:h-10 bg-black/50 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-black/70 transition-colors"
                 >
-                  <X size={24} />
+                  <X size={18} className="sm:w-6 sm:h-6" />
                 </button>
               </div>
-              <div className="p-8">
-                <div className="flex items-center gap-3 mb-4">
-                  <span className="px-3 py-1 bg-blue-500 rounded-full text-sm font-semibold text-white">
+              <div className="p-4 sm:p-6 md:p-8">
+                <div className="flex items-center gap-3 mb-3 sm:mb-4">
+                  <span className="px-2 sm:px-3 py-1 bg-blue-500 rounded-full text-xs sm:text-sm font-semibold text-white">
                     {selectedProject.category}
                   </span>
                 </div>
-                <h2 className="text-3xl font-bold text-white mb-4">{selectedProject.title}</h2>
-                <p className="text-gray-300 mb-6 leading-relaxed">{selectedProject.description}</p>
+                <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-white mb-3 sm:mb-4">{selectedProject.title}</h2>
+                <p className="text-gray-300 text-sm sm:text-base mb-4 sm:mb-6 leading-relaxed">{selectedProject.description}</p>
                 
-                <div className="mb-6">
-                  <h3 className="text-xl font-semibold text-white mb-3">Key Features</h3>
-                  <ul className="space-y-2">
+                <div className="mb-4 sm:mb-6">
+                  <h3 className="text-lg sm:text-xl font-semibold text-white mb-2 sm:mb-3">Key Features</h3>
+                  <ul className="space-y-1.5 sm:space-y-2">
                     {selectedProject.features.map((feature, index) => (
-                      <li key={index} className="text-gray-300 flex items-start">
-                        <span className="text-blue-500 mr-2">▸</span>
-                        {feature}
+                      <li key={index} className="text-gray-300 text-sm sm:text-base flex items-start">
+                        <span className="text-blue-500 mr-2 flex-shrink-0">▸</span>
+                        <span>{feature}</span>
                       </li>
                     ))}
                   </ul>
                 </div>
 
-                <div className="mb-6">
-                  <h3 className="text-xl font-semibold text-white mb-3">Technologies Used</h3>
-                  <div className="flex flex-wrap gap-2">
+                <div className="mb-4 sm:mb-6">
+                  <h3 className="text-lg sm:text-xl font-semibold text-white mb-2 sm:mb-3">Technologies Used</h3>
+                  <div className="flex flex-wrap gap-1.5 sm:gap-2">
                     {selectedProject.technologies.map((tech, index) => (
                       <span
                         key={index}
-                        className="px-3 py-1 bg-gray-800 text-sm text-gray-300 rounded"
+                        className="px-2 sm:px-3 py-1 bg-gray-800 text-xs sm:text-sm text-gray-300 rounded"
                       >
                         {tech}
                       </span>
@@ -257,9 +258,9 @@ const Projects = () => {
                     rel={selectedProject.isPdf ? "noopener noreferrer" : undefined}
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
-                    className="px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg font-semibold text-white flex items-center gap-2"
+                    className="px-4 sm:px-6 py-2 sm:py-3 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg text-sm sm:text-base font-semibold text-white flex items-center gap-2 w-full sm:w-auto justify-center"
                   >
-                    <ExternalLink size={20} />
+                    <ExternalLink size={18} className="sm:w-5 sm:h-5" />
                     {selectedProject.isPdf ? 'View PDF' : 'View Project'}
                   </motion.a>
                 </div>

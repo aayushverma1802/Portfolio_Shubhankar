@@ -38,11 +38,11 @@ const Navigation = () => {
         isScrolled ? 'bg-black/80 backdrop-blur-md shadow-lg' : 'bg-transparent'
       }`}
     >
-      <div className="container mx-auto px-6 py-4">
+      <div className="container mx-auto px-4 sm:px-6 py-3 sm:py-4">
         <div className="flex items-center justify-between">
           <motion.div
             whileHover={{ scale: 1.05 }}
-            className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-600 bg-clip-text text-transparent"
+            className="text-lg sm:text-xl md:text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-600 bg-clip-text text-transparent"
           >
             Shubhi Portfolio
           </motion.div>
@@ -70,12 +70,12 @@ const Navigation = () => {
 
           {/* Mobile Menu Button */}
           <button
-            className="md:hidden text-white"
+            className="md:hidden text-white p-2 -mr-2"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             aria-label="Toggle navigation menu"
             aria-expanded={isMobileMenuOpen}
           >
-            {isMobileMenuOpen ? <X size={28} /> : <Menu size={28} />}
+            {isMobileMenuOpen ? <X size={24} className="sm:w-7 sm:h-7" /> : <Menu size={24} className="sm:w-7 sm:h-7" />}
           </button>
         </div>
 
@@ -85,7 +85,7 @@ const Navigation = () => {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="md:hidden mt-4 space-y-4 pb-4"
+            className="md:hidden mt-3 sm:mt-4 space-y-3 sm:space-y-4 pb-3 sm:pb-4"
           >
             {navItems.map((item) => (
               <a
@@ -95,7 +95,7 @@ const Navigation = () => {
                   e.preventDefault()
                   scrollTo(item.href)
                 }}
-                className="block text-gray-300 hover:text-white transition-colors"
+                className="block text-base sm:text-lg text-gray-300 hover:text-white transition-colors py-1"
               >
                 {item.name}
               </a>

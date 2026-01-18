@@ -11,10 +11,28 @@ const About = () => {
 
   const [currentIndex, setCurrentIndex] = useState(0)
   const [isPaused, setIsPaused] = useState(false)
+  const [cardsPerView, setCardsPerView] = useState(3)
   const intervalRef = useRef(null)
   const pauseTimeoutRef = useRef(null)
   const carouselRef = useRef(null)
   const isTransitioningRef = useRef(false)
+
+  // Update cards per view based on screen size
+  useEffect(() => {
+    const updateCardsPerView = () => {
+      if (window.innerWidth < 640) {
+        setCardsPerView(1) // Mobile: 1 card
+      } else if (window.innerWidth < 1024) {
+        setCardsPerView(2) // Tablet: 2 cards
+      } else {
+        setCardsPerView(3) // Desktop: 3 cards
+      }
+    }
+    
+    updateCardsPerView()
+    window.addEventListener('resize', updateCardsPerView)
+    return () => window.removeEventListener('resize', updateCardsPerView)
+  }, [])
 
   const achievements = [
     {
@@ -43,8 +61,8 @@ const About = () => {
     },
   ]
 
-  // Calculate total slides (showing 3 at a time)
-  const totalSlides = Math.ceil(achievements.length / 3) // For 6 items showing 3 at a time, we have 2 slides
+  // Calculate total slides based on cards per view
+  const totalSlides = Math.ceil(achievements.length / cardsPerView)
 
   // Duplicate achievements for infinite loop
   const duplicatedAchievements = [...achievements, ...achievements]
@@ -60,10 +78,10 @@ const About = () => {
     }, 3000) // Resume after 3 seconds
   }
 
-  // Navigation functions - move by slides (3 cards at a time)
+  // Navigation functions - move by slides (cardsPerView cards at a time)
   const goToNext = () => {
     setCurrentIndex((prevIndex) => {
-      const nextIndex = prevIndex + 3
+      const nextIndex = prevIndex + cardsPerView
       return nextIndex >= achievements.length ? 0 : nextIndex
     })
     resumeAutoRotate()
@@ -71,14 +89,14 @@ const About = () => {
 
   const goToPrev = () => {
     setCurrentIndex((prevIndex) => {
-      const prevIndexNew = prevIndex - 3
-      return prevIndexNew < 0 ? achievements.length - 3 : prevIndexNew
+      const prevIndexNew = prevIndex - cardsPerView
+      return prevIndexNew < 0 ? achievements.length - cardsPerView : prevIndexNew
     })
     resumeAutoRotate()
   }
 
   const goToSlide = (slideIndex) => {
-    const newIndex = slideIndex * 3
+    const newIndex = slideIndex * cardsPerView
     setCurrentIndex(newIndex)
     resumeAutoRotate()
   }
@@ -117,67 +135,67 @@ const About = () => {
     if (!isPaused && inView) {
       intervalRef.current = setInterval(() => {
         setCurrentIndex((prevIndex) => {
-          const nextIndex = prevIndex + 3
+          const nextIndex = prevIndex + cardsPerView
           // Move forward, reset will be handled by useEffect above
           return nextIndex >= achievements.length ? achievements.length : nextIndex
         })
       }, 2000)
     }
 
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current)
-        intervalRef.current = null
+      return () => {
+        if (intervalRef.current) {
+          clearInterval(intervalRef.current)
+          intervalRef.current = null
+        }
+        if (pauseTimeoutRef.current) {
+          clearTimeout(pauseTimeoutRef.current)
+          pauseTimeoutRef.current = null
+        }
       }
-      if (pauseTimeoutRef.current) {
-        clearTimeout(pauseTimeoutRef.current)
-        pauseTimeoutRef.current = null
-      }
-    }
-  }, [isPaused, inView, achievements.length])
+    }, [isPaused, inView, achievements.length, cardsPerView])
 
   return (
     <section
       id="about"
       ref={ref}
-      className="min-h-screen py-20 px-6 relative bg-black/40 backdrop-blur-sm"
+      className="min-h-screen py-8 sm:py-12 md:py-20 px-4 sm:px-6 relative bg-black/40 backdrop-blur-sm"
     >
       <div className="container mx-auto max-w-6xl">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={inView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.8 }}
-          className="text-center mb-16"
+          className="text-center mb-8 sm:mb-12 md:mb-16"
         >
-          <h2 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-blue-400 to-purple-600 bg-clip-text text-transparent">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-2 sm:mb-4 bg-gradient-to-r from-blue-400 to-purple-600 bg-clip-text text-transparent">
             About Me
           </h2>
-          <p className="text-gray-400 text-lg max-w-2xl mx-auto">
+          <p className="text-gray-400 text-sm sm:text-base md:text-lg max-w-2xl mx-auto px-4">
             Passionate mechanical engineer with a drive for innovation and excellence
           </p>
         </motion.div>
 
-        <div className="mb-16">
+        <div className="mb-8 sm:mb-12 md:mb-16">
           <motion.div
             initial={{ opacity: 0, x: -30 }}
             animate={inView ? { opacity: 1, x: 0 } : {}}
             transition={{ delay: 0.2, duration: 0.8 }}
-            className="max-w-4xl mx-auto"
+            className="max-w-4xl mx-auto px-4"
           >
-            <h3 className="text-2xl font-bold mb-4 text-white">My Journey</h3>
-            <p className="text-gray-300 mb-4 leading-relaxed">
+            <h3 className="text-xl sm:text-2xl font-bold mb-3 sm:mb-4 text-white">My Journey</h3>
+            <p className="text-gray-300 text-sm sm:text-base mb-3 sm:mb-4 leading-relaxed">
               With over a decade of experience in mechanical engineering, I've dedicated my career
               to pushing the boundaries of design and innovation. My expertise spans from
               conceptual design to final production, with a focus on creating efficient, sustainable,
               and cutting-edge solutions.
             </p>
-            <p className="text-gray-300 mb-4 leading-relaxed">
+            <p className="text-gray-300 text-sm sm:text-base mb-3 sm:mb-4 leading-relaxed">
               I specialize in transforming complex engineering challenges into elegant, functional
               designs. Through meticulous attention to detail and a deep understanding of
               mechanical principles, I've successfully delivered numerous projects across various
               industries including aerospace, automotive, and consumer products.
             </p>
-            <p className="text-gray-300 leading-relaxed">
+            <p className="text-gray-300 text-sm sm:text-base leading-relaxed">
               My approach combines technical excellence with creative problem-solving, ensuring that
               every project not only meets but exceeds expectations. I'm constantly learning and
               adapting to new technologies, keeping my skills at the forefront of the industry.
@@ -190,7 +208,7 @@ const About = () => {
           animate={inView ? { opacity: 1, y: 0 } : {}}
           transition={{ delay: 0.6, duration: 0.8 }}
         >
-          <h3 className="text-2xl font-bold mb-8 text-center text-white">Key Expertise</h3>
+          <h3 className="text-xl sm:text-2xl font-bold mb-6 sm:mb-8 text-center text-white px-4">Key Expertise</h3>
           <div 
             className="relative overflow-hidden w-full"
             style={{ 
@@ -216,10 +234,10 @@ const About = () => {
                 e.stopPropagation()
                 goToPrev()
               }}
-              className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-gray-900/80 hover:bg-gray-800 rounded-full p-2 transition-all"
+              className="absolute left-1 sm:left-2 md:left-0 top-1/2 -translate-y-1/2 z-10 bg-gray-900/80 hover:bg-gray-800 rounded-full p-1.5 sm:p-2 transition-all"
               aria-label="Previous slide"
             >
-              <ChevronLeft className="w-6 h-6 text-white" />
+              <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-white" />
             </button>
 
             {/* Right Arrow */}
@@ -228,20 +246,20 @@ const About = () => {
                 e.stopPropagation()
                 goToNext()
               }}
-              className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-gray-900/80 hover:bg-gray-800 rounded-full p-2 transition-all"
+              className="absolute right-1 sm:right-2 md:right-0 top-1/2 -translate-y-1/2 z-10 bg-gray-900/80 hover:bg-gray-800 rounded-full p-1.5 sm:p-2 transition-all"
               aria-label="Next slide"
             >
-              <ChevronRight className="w-6 h-6 text-white" />
+              <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-white" />
             </button>
 
-            <div className="px-12">
+            <div className="px-8 sm:px-10 md:px-12">
               <div 
                 ref={carouselRef}
-                className="flex transition-transform duration-500 ease-in-out"
+                className="flex transition-transform duration-500 ease-in-out gap-4 sm:gap-6"
                 style={{ 
-                  transform: `translateX(calc(-${currentIndex} * ((100% - 3rem) / 3 + 1.5rem)))`,
+                  transform: `translateX(calc(-${currentIndex} * ((100% - ${(cardsPerView - 1) * 1.5}rem) / ${cardsPerView} + 1.5rem)))`,
                   willChange: 'transform',
-                  gap: '1.5rem'
+                  gap: cardsPerView === 1 ? '1rem' : cardsPerView === 2 ? '1.5rem' : '1.5rem'
                 }}
                 onClick={() => {
                   if (pauseTimeoutRef.current) {
@@ -262,14 +280,15 @@ const About = () => {
                       animate={inView ? { opacity: 1, y: 0 } : {}}
                       transition={{ delay: 0.8 + (index % achievements.length) * 0.1, duration: 0.6 }}
                       whileHover={{ scale: 1.02 }}
-                      className="bg-gray-900/50 backdrop-blur-sm p-6 rounded-lg border border-gray-800 flex-shrink-0 cursor-pointer"
+                      className="bg-gray-900/50 backdrop-blur-sm p-4 sm:p-5 md:p-6 rounded-lg border border-gray-800 flex-shrink-0 cursor-pointer"
                       style={{ 
-                        width: 'calc((100% - 3rem) / 3)',
-                        flexShrink: 0
+                        width: `calc((100% - ${(cardsPerView - 1) * 1.5}rem) / ${cardsPerView})`,
+                        flexShrink: 0,
+                        minWidth: 0
                       }}
                     >
-                      <h4 className="text-xl font-semibold text-white mb-3">{cardNumber}. {achievement.title}</h4>
-                      <p className="text-gray-300">{achievement.description}</p>
+                      <h4 className="text-lg sm:text-xl font-semibold text-white mb-2 sm:mb-3">{cardNumber}. {achievement.title}</h4>
+                      <p className="text-gray-300 text-sm sm:text-base">{achievement.description}</p>
                     </motion.div>
                   )
                 })}
@@ -277,9 +296,9 @@ const About = () => {
             </div>
 
             {/* Dots Indicator with Numbers */}
-            <div className="flex justify-center gap-3 mt-6">
+            <div className="flex justify-center gap-2 sm:gap-3 mt-4 sm:mt-6">
               {Array.from({ length: totalSlides }).map((_, index) => {
-                const slideStartIndex = index * 3
+                const slideStartIndex = index * cardsPerView
                 const isActive = currentIndex === slideStartIndex
                 return (
                   <button
@@ -288,10 +307,10 @@ const About = () => {
                       e.stopPropagation()
                       goToSlide(index)
                     }}
-                    className={`transition-all duration-300 rounded-full flex items-center justify-center font-semibold ${
+                    className={`transition-all duration-300 rounded-full flex items-center justify-center font-semibold text-sm sm:text-base ${
                       isActive
-                        ? 'bg-blue-500 w-10 h-10 text-white'
-                        : 'bg-gray-600 w-10 h-10 text-gray-300 hover:bg-gray-500'
+                        ? 'bg-blue-500 w-8 h-8 sm:w-10 sm:h-10 text-white'
+                        : 'bg-gray-600 w-8 h-8 sm:w-10 sm:h-10 text-gray-300 hover:bg-gray-500'
                     }`}
                     aria-label={`Go to slide ${index + 1}`}
                   >
