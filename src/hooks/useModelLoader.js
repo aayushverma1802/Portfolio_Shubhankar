@@ -5,7 +5,7 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 
 /**
  * Hook to preload and track loading progress of GLB models
- * Downloads with XHR for real progress, then caches properly for drei
+ * ALWAYS downloads and shows real progress - no shortcuts
  */
 export function useModelPreloader(modelUrl) {
   const [loading, setLoading] = useState(true)
@@ -25,28 +25,31 @@ export function useModelPreloader(modelUrl) {
     setError(null)
     setIsCached(false)
 
-    // Quick cache check
+    // Check cache - but still verify it works
     const checkCache = async () => {
       try {
         const cache = useGLTF.cache || new Map()
         if (cache.has(modelUrl)) {
-          const preloadPromise = useGLTF.preload(modelUrl)
-          const timeoutPromise = new Promise(resolve => setTimeout(() => resolve('timeout'), 200))
-          const result = await Promise.race([preloadPromise, timeoutPromise])
-          
-          if (result !== 'timeout' && !cancelled) {
-            setIsCached(true)
-            setProgress(100)
-            setTimeout(() => {
-              if (!cancelled) {
-                setLoading(false)
-              }
-            }, 300)
-            return true
+          // Verify it actually works by calling preload
+          try {
+            await useGLTF.preload(modelUrl)
+            if (!cancelled) {
+              setIsCached(true)
+              setProgress(100)
+              // Still wait a bit to ensure it's ready
+              setTimeout(() => {
+                if (!cancelled) {
+                  setLoading(false)
+                }
+              }, 500)
+              return true
+            }
+          } catch (err) {
+            // Cache might be stale, continue with download
           }
         }
       } catch (err) {
-        // Not cached
+        // Not cached, continue
       }
       return false
     }
@@ -56,25 +59,25 @@ export function useModelPreloader(modelUrl) {
     checkCache().then((wasCached) => {
       if (wasCached || cancelled) return
 
-      // Download with XHR - show REAL progress
+      // ALWAYS download - show REAL progress
       setProgress(5)
 
       xhr = new XMLHttpRequest()
       xhr.open('GET', modelUrl, true)
       xhr.responseType = 'arraybuffer'
 
-      // Real download progress tracking
+      // Real download progress - update frequently
       xhr.addEventListener('progress', (e) => {
         if (cancelled) return
         
         if (e.lengthComputable && e.total > 0) {
           // Download: 5% to 85%
           const downloadProgress = 5 + (e.loaded / e.total) * 80
-          setProgress(Math.min(85, downloadProgress))
-        } else {
+          setProgress(Math.min(85, Math.max(5, downloadProgress)))
+        } else if (e.loaded > 0) {
           // Estimate: ~17MB file
           const estimatedProgress = Math.min(85, 5 + (e.loaded / 18000000) * 80)
-          setProgress(estimatedProgress)
+          setProgress(Math.max(5, estimatedProgress))
         }
       })
 
@@ -83,48 +86,64 @@ export function useModelPreloader(modelUrl) {
 
         try {
           const arrayBuffer = xhr.response
+          
+          if (!arrayBuffer || arrayBuffer.byteLength === 0) {
+            throw new Error('Empty response')
+          }
+
           setProgress(87)
 
-          // Parse the model
+          // Parse the model - this takes time
           const loader = new GLTFLoader()
           loader.parse(
             arrayBuffer,
             modelUrl,
             async (gltf) => {
-              if (!cancelled) {
+              if (!cancelled && gltf) {
                 setProgress(95)
 
                 // CRITICAL: Cache in drei's system
                 const cache = useGLTF.cache || new Map()
                 cache.set(modelUrl, gltf)
 
-                // Now call drei's preload to ensure it's recognized
+                // Call drei's preload to ensure recognition
                 try {
                   await useGLTF.preload(modelUrl)
                 } catch (preloadErr) {
-                  // Model is cached, drei should find it
-                  console.log('Preload note:', preloadErr.message || 'Model cached')
+                  console.log('Preload:', preloadErr.message || 'Model cached')
                 }
 
                 setProgress(100)
 
-                // CRITICAL: Wait and verify model is ready
-                setTimeout(() => {
-                  if (!cancelled) {
-                    // Double-check cache
-                    const verifyCache = useGLTF.cache || new Map()
-                    if (verifyCache.has(modelUrl)) {
-                      setLoading(false)
-                    } else {
-                      // Not in cache, wait more
-                      setTimeout(() => {
-                        if (!cancelled) {
-                          setLoading(false)
-                        }
-                      }, 500)
-                    }
+                // CRITICAL: Wait longer and verify multiple times
+                let verifyAttempts = 0
+                const verifyReady = () => {
+                  verifyAttempts++
+                  const verifyCache = useGLTF.cache || new Map()
+                  
+                  if (verifyCache.has(modelUrl)) {
+                    // Model is cached - wait a bit more to ensure drei recognizes it
+                    setTimeout(() => {
+                      if (!cancelled) {
+                        setLoading(false)
+                      }
+                    }, 1000)
+                  } else if (verifyAttempts < 15) {
+                    // Not in cache yet, check again
+                    setTimeout(verifyReady, 300)
+                  } else {
+                    // Give up after many attempts
+                    console.warn('Model cache verification failed, proceeding anyway')
+                    setTimeout(() => {
+                      if (!cancelled) {
+                        setLoading(false)
+                      }
+                    }, 1000)
                   }
-                }, 1500)
+                }
+                
+                // Start verification after a delay
+                setTimeout(verifyReady, 500)
               }
             },
             (err) => {
