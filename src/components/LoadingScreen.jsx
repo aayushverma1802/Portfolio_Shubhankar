@@ -21,10 +21,31 @@ const LoadingScreen = ({ onComplete }) => {
     if (!modelLoading && modelProgress >= 100) {
       setProgress(100)
       setLoadingText(loadingMessages[3])
-      // Small delay to ensure model is fully ready
-      setTimeout(() => {
-        if (onComplete) onComplete()
-      }, 300)
+      
+      // Verify model is actually in drei's cache before proceeding
+      const verifyModel = async () => {
+        try {
+          const { useGLTF } = await import('@react-three/drei')
+          const cache = useGLTF.cache || new Map()
+          if (cache.has('/models/f1-car.glb')) {
+            // Model is cached, proceed
+            setTimeout(() => {
+              if (onComplete) onComplete()
+            }, 500)
+          } else {
+            // Model not in cache, wait a bit more
+            setTimeout(() => {
+              if (onComplete) onComplete()
+            }, 1000)
+          }
+        } catch (err) {
+          // If verification fails, proceed anyway
+          setTimeout(() => {
+            if (onComplete) onComplete()
+          }, 500)
+        }
+      }
+      verifyModel()
       return
     }
 
@@ -34,7 +55,7 @@ const LoadingScreen = ({ onComplete }) => {
       setLoadingText(loadingMessages[3])
       setTimeout(() => {
         if (onComplete) onComplete()
-      }, 200)
+      }, 500)
       return
     }
 
