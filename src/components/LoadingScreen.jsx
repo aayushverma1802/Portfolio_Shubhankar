@@ -6,7 +6,7 @@ const LoadingScreen = ({ onComplete }) => {
   const [progress, setProgress] = useState(0)
   const [loadingText, setLoadingText] = useState('Initializing...')
   
-  const { loading: modelLoading, progress: modelProgress, error: modelError } = useModelPreloader('/models/f1-car.glb')
+  const { loading: modelLoading, progress: modelProgress, error: modelError, isCached } = useModelPreloader('/models/f1-car.glb')
 
   const loadingMessages = [
     'Initializing...',
@@ -16,6 +16,15 @@ const LoadingScreen = ({ onComplete }) => {
   ]
 
   useEffect(() => {
+    // If cached, skip loading screen quickly
+    if (isCached && !modelLoading) {
+      setProgress(100)
+      setTimeout(() => {
+        if (onComplete) onComplete()
+      }, 200)
+      return
+    }
+
     if (modelLoading) {
       const currentProgress = Math.max(5, modelProgress)
       setProgress(currentProgress)
@@ -36,7 +45,7 @@ const LoadingScreen = ({ onComplete }) => {
         if (onComplete) onComplete()
       }, 500)
     }
-  }, [modelLoading, modelProgress, onComplete])
+  }, [modelLoading, modelProgress, isCached, onComplete])
 
   useEffect(() => {
     if (modelError) {
