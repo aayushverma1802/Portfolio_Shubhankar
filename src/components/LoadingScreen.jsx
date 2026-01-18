@@ -1,49 +1,57 @@
 import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Cpu, Sparkles } from 'lucide-react'
+import { useModelPreloader } from '../hooks/useModelLoader'
 
 const LoadingScreen = ({ onComplete }) => {
   const [progress, setProgress] = useState(0)
   const [loadingText, setLoadingText] = useState('Initializing...')
+  
+  // Actually load the model and track real progress
+  const { loading: modelLoading, progress: modelProgress, error: modelError } = useModelPreloader('/models/f1-car.glb')
 
   const loadingMessages = [
     'Initializing...',
-    'Loading assets...',
-    'Preparing experience...',
+    'Downloading 3D model...',
+    'Processing model data...',
     'Almost ready...',
   ]
 
+  // Update progress based on actual model loading
   useEffect(() => {
-    const interval = setInterval(() => {
-      setProgress((prev) => {
-        if (prev >= 100) {
-          clearInterval(interval)
-          setTimeout(() => {
-            if (onComplete) onComplete()
-          }, 500)
-          return 100
-        }
-        // Simulate realistic loading progress
-        const increment = Math.random() * 12 + 3
-        const newProgress = Math.min(prev + increment, 100)
-        
-        // Update loading message based on progress
-        if (newProgress < 25) {
-          setLoadingText(loadingMessages[0])
-        } else if (newProgress < 50) {
-          setLoadingText(loadingMessages[1])
-        } else if (newProgress < 85) {
-          setLoadingText(loadingMessages[2])
-        } else {
-          setLoadingText(loadingMessages[3])
-        }
-        
-        return newProgress
-      })
-    }, 120)
+    if (modelLoading) {
+      setProgress(modelProgress)
+      
+      // Update loading message based on progress
+      if (modelProgress < 25) {
+        setLoadingText(loadingMessages[0])
+      } else if (modelProgress < 60) {
+        setLoadingText(loadingMessages[1])
+      } else if (modelProgress < 90) {
+        setLoadingText(loadingMessages[2])
+      } else {
+        setLoadingText(loadingMessages[3])
+      }
+    } else {
+      // Model loaded, complete loading
+      setProgress(100)
+      setLoadingText(loadingMessages[3])
+      setTimeout(() => {
+        if (onComplete) onComplete()
+      }, 500)
+    }
+  }, [modelLoading, modelProgress, onComplete])
 
-    return () => clearInterval(interval)
-  }, [onComplete])
+  // Handle model loading errors gracefully
+  useEffect(() => {
+    if (modelError) {
+      console.warn('Model loading error, continuing anyway:', modelError)
+      // Still allow the app to load even if model fails
+      setTimeout(() => {
+        if (onComplete) onComplete()
+      }, 1000)
+    }
+  }, [modelError, onComplete])
 
   return (
     <div className="fixed inset-0 bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900 flex items-center justify-center z-50 overflow-hidden">

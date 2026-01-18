@@ -345,19 +345,16 @@ function DynamicLighting({ scrollProgress }) {
   )
 }
 
+// Loading fallback component for Suspense
+function ModelLoadingFallback() {
+  return null // Model is preloaded, so this shouldn't show
+}
+
 // Main enhanced scene with F1 Car
 export default function EnhancedScene3D() {
   const scrollProgress = useScrollProgress()
   
-  // Preload GLTF models for better performance
-  useEffect(() => {
-    try {
-      useGLTF.preload('/models/f1-car.glb')
-    } catch (e) {
-      // Silently fail if model doesn't exist yet
-    }
-  }, [])
-  
+  // Model is preloaded in LoadingScreen, so it should be ready here
   // You can use a URL to a free F1 car model or put it in public/models/
   const f1ModelUrl = '/models/f1-car.glb' // First F1 car GLB file
   const f1ModelUrl2 = '/models/f1-car-2.glb' // Second F1 car GLB file
@@ -368,12 +365,16 @@ export default function EnhancedScene3D() {
 
       {/* Main F1 Car - loads real GLTF model with error handling */}
       <ErrorBoundary>
-        <F1Car position={[0, -0.5, -2]} modelUrl={f1ModelUrl} reverseDirection={false} scale={0.15} />
+        <Suspense fallback={<ModelLoadingFallback />}>
+          <F1Car position={[0, -0.5, -2]} modelUrl={f1ModelUrl} reverseDirection={false} scale={0.15} />
+        </Suspense>
       </ErrorBoundary>
       
       {/* Second F1 Car - removed for now */}
       {/* <ErrorBoundary>
-        <F1Car position={[3.5, 0, -1.5]} modelUrl={f1ModelUrl2} reverseDirection={true} scale={1.0} rotationY={0} otherCarPosition={[0, 0, -2]} />
+        <Suspense fallback={<ModelLoadingFallback />}>
+          <F1Car position={[3.5, 0, -1.5]} modelUrl={f1ModelUrl2} reverseDirection={true} scale={1.0} rotationY={0} otherCarPosition={[0, 0, -2]} />
+        </Suspense>
       </ErrorBoundary> */}
     </>
   )
