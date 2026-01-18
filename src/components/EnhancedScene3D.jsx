@@ -15,7 +15,20 @@ function F1CarModel({ position, modelUrl, reverseDirection = false, scale = 0.15
   const scrollRef = useRef(0)
   
   // Load the GLTF model with caching
-  const { scene } = useGLTF(modelUrl || '/models/f1-car.glb')
+  // Model should be preloaded by LoadingScreen, so this should be instant
+  let gltfResult
+  try {
+    gltfResult = useGLTF(modelUrl || '/models/f1-car.glb')
+  } catch (err) {
+    console.error('useGLTF error:', err)
+    return null
+  }
+  
+  const { scene } = gltfResult || {}
+  
+  if (!scene) {
+    return null
+  }
 
   // Find wheels and other parts for animation (memoized)
   const wheelsRef = useRef([])

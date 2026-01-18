@@ -1,6 +1,6 @@
-import React, { Suspense, useState, useEffect } from 'react'
+import React, { Suspense, useState } from 'react'
 import { Canvas } from '@react-three/fiber'
-import { OrbitControls, PerspectiveCamera, PerformanceMonitor, useGLTF } from '@react-three/drei'
+import { OrbitControls, PerspectiveCamera, PerformanceMonitor } from '@react-three/drei'
 import Hero from './components/Hero'
 import About from './components/About'
 import Projects from './components/Projects'
@@ -13,13 +13,6 @@ import LoadingScreen from './components/LoadingScreen'
 
 function App() {
   const [loading, setLoading] = useState(true)
-  
-  // Preload model when app starts
-  useEffect(() => {
-    useGLTF.preload('/models/f1-car.glb').catch(err => {
-      console.warn('Preload in App:', err)
-    })
-  }, [])
   // Initialize DPR based on device pixel ratio, capped at 2 for performance
   const [dpr, setDpr] = useState(() => {
     if (typeof window !== 'undefined') {
