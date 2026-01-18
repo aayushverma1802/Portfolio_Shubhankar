@@ -16,9 +16,6 @@ const LoadingScreen = ({ onComplete }) => {
   ]
 
   useEffect(() => {
-    // CRITICAL: NEVER complete until loading is FALSE and progress is 100
-    // This ensures we wait for the FULL download
-    
     // Show progress while loading
     if (modelLoading) {
       const currentProgress = Math.max(5, modelProgress)
@@ -36,75 +33,15 @@ const LoadingScreen = ({ onComplete }) => {
       return // DON'T complete while loading
     }
 
-    // Only proceed when loading is FALSE AND progress is 100
-    if (!modelLoading && modelProgress >= 100) {
+    // Only complete when loading is FALSE
+    if (!modelLoading) {
       setProgress(100)
       setLoadingText(loadingMessages[3])
       
-      // Verify model is actually in drei's cache before proceeding
-      const verifyModel = async () => {
-        try {
-          const { useGLTF } = await import('@react-three/drei')
-          const cache = useGLTF.cache || new Map()
-          
-          // Wait until model is definitely in cache - check multiple times
-          let attempts = 0
-          const checkCache = () => {
-            attempts++
-            if (cache.has('/models/f1-car.glb')) {
-              // Model is cached, wait a bit more then proceed
-              setTimeout(() => {
-                if (onComplete) onComplete()
-              }, 800)
-            } else if (attempts < 20) {
-              // Not in cache yet, check again
-              setTimeout(checkCache, 300)
-            } else {
-              // Give up after many attempts
-              console.warn('Model not found in cache after verification')
-              setTimeout(() => {
-                if (onComplete) onComplete()
-              }, 1000)
-            }
-          }
-          checkCache()
-        } catch (err) {
-          // If verification fails, wait longer then proceed
-          setTimeout(() => {
-            if (onComplete) onComplete()
-          }, 2000)
-        }
-      }
-      verifyModel()
-      return
-    }
-
-    // If cached and loading is false, verify then proceed
-    if (isCached && !modelLoading) {
-      setProgress(100)
-      setLoadingText(loadingMessages[3])
-      
-      // Still verify cache
-      const verifyModel = async () => {
-        try {
-          const { useGLTF } = await import('@react-three/drei')
-          const cache = useGLTF.cache || new Map()
-          if (cache.has('/models/f1-car.glb')) {
-            setTimeout(() => {
-              if (onComplete) onComplete()
-            }, 500)
-          } else {
-            setTimeout(() => {
-              if (onComplete) onComplete()
-            }, 1000)
-          }
-        } catch (err) {
-          setTimeout(() => {
-            if (onComplete) onComplete()
-          }, 1000)
-        }
-      }
-      verifyModel()
+      // Wait longer to ensure drei's system is ready
+      setTimeout(() => {
+        if (onComplete) onComplete()
+      }, 1500)
       return
     }
   }, [modelLoading, modelProgress, isCached, onComplete])
