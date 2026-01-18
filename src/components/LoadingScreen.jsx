@@ -1,12 +1,44 @@
 import React, { useState, useEffect } from 'react'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { useModelPreloader } from '../hooks/useModelLoader'
 
 const LoadingScreen = ({ onComplete }) => {
   const [progress, setProgress] = useState(0)
   const [loadingText, setLoadingText] = useState('Initializing...')
   
-  const { loading: modelLoading, progress: modelProgress, error: modelError, isCached } = useModelPreloader('/models/f1-car.glb')
+  const quotes = [
+    {
+      text: "Failure is the opportunity to begin again more intelligently.",
+      author: "Henry Ford"
+    },
+    {
+      text: "Design is not just what it looks like and feels like. Design is how it works.",
+      author: "Steve Jobs"
+    },
+    {
+      text: "If you can't explain it simply, you don't understand it well enough.",
+      author: "Albert Einstein"
+    },
+    {
+      text: "Machines take me by surprise with great frequency.",
+      author: "Alan Turing"
+    },
+    {
+      text: "I am, and ever will be, a white-socks, pocket-protector, nerdy engineer.",
+      author: "Neil Armstrong"
+    },
+    {
+      text: "When you want to understand how something works, dismantle it.",
+      author: "Elon Musk"
+    }
+  ]
+
+  // Initialize with random quote index
+  const [currentQuoteIndex, setCurrentQuoteIndex] = useState(() => 
+    Math.floor(Math.random() * quotes.length)
+  )
+  
+  const { loading: modelLoading, progress: modelProgress, error: modelError } = useModelPreloader('/models/f1-car.glb')
 
   const loadingMessages = [
     'Initializing...',
@@ -16,7 +48,6 @@ const LoadingScreen = ({ onComplete }) => {
   ]
 
   useEffect(() => {
-    // Show progress while loading
     if (modelLoading) {
       const currentProgress = Math.max(5, modelProgress)
       setProgress(currentProgress)
@@ -30,32 +61,36 @@ const LoadingScreen = ({ onComplete }) => {
       } else {
         setLoadingText(loadingMessages[3])
       }
-      return // DON'T complete while loading
-    }
-
-    // Only complete when loading is FALSE
-    if (!modelLoading) {
+    } else {
       setProgress(100)
       setLoadingText(loadingMessages[3])
-      
-      // Wait longer to ensure drei's system is ready
       setTimeout(() => {
         if (onComplete) onComplete()
-      }, 1500)
-      return
+      }, 500)
     }
-  }, [modelLoading, modelProgress, isCached, onComplete])
+  }, [modelLoading, modelProgress, onComplete])
 
   useEffect(() => {
-    // Only handle errors if loading is complete or failed
-    if (modelError && !modelLoading) {
+    if (modelError) {
       console.warn('Model loading error, continuing anyway:', modelError)
-      // Still wait a bit to ensure site doesn't break
       setTimeout(() => {
         if (onComplete) onComplete()
       }, 1000)
     }
-  }, [modelError, modelLoading, onComplete])
+  }, [modelError, onComplete])
+
+  // Rotate quotes every 3 seconds
+  useEffect(() => {
+    const quoteInterval = setInterval(() => {
+      setCurrentQuoteIndex((prevIndex) => {
+        // Randomly select next quote (can be same or different)
+        const randomIndex = Math.floor(Math.random() * quotes.length)
+        return randomIndex
+      })
+    }, 3000) // Change every 3 seconds
+
+    return () => clearInterval(quoteInterval)
+  }, [quotes.length])
 
   return (
     <div className="fixed inset-0 bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900 flex items-center justify-center z-50">
@@ -90,10 +125,10 @@ const LoadingScreen = ({ onComplete }) => {
       </div>
 
       {/* Content */}
-      <div className="relative z-10 w-full max-w-xl px-6">
+      <div className="relative z-10 w-full max-w-xl px-6 flex flex-col items-center justify-center min-h-screen">
         {/* Title */}
         <h1 className="text-4xl md:text-5xl font-bold mb-12 text-center bg-gradient-to-r from-blue-400 via-purple-400 to-blue-400 bg-clip-text text-transparent">
-          Portfolio
+          Shubhi Portfolio
         </h1>
 
         {/* Loading Text */}
@@ -173,6 +208,27 @@ const LoadingScreen = ({ onComplete }) => {
             🏁
           </motion.div>
         )}
+
+        {/* Inspirational Quote Section - Bottom */}
+        <div className="mt-16 w-full max-w-2xl px-6">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={currentQuoteIndex}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.5 }}
+              className="text-center"
+            >
+              <p className="text-gray-300 text-lg md:text-xl italic mb-3 leading-relaxed">
+                "{quotes[currentQuoteIndex].text}"
+              </p>
+              <p className="text-gray-400 text-sm md:text-base font-medium">
+                – {quotes[currentQuoteIndex].author}
+              </p>
+            </motion.div>
+          </AnimatePresence>
+        </div>
       </div>
     </div>
   )

@@ -13,49 +13,52 @@ const Projects = () => {
 
   const projects = [
     {
-      id: 1,
-      title: 'Advanced Robotic Arm System',
-      category: 'Robotics',
-      description: 'Designed and developed a 6-axis robotic arm with precision control system for industrial automation. Features advanced kinematics and real-time feedback control.',
-      image: 'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=800',
-      technologies: ['SolidWorks', 'ANSYS', 'MATLAB', 'C++', 'Arduino'],
+      id: 2,
+      title: 'Developing Efficient Structural Systems for Small Satellites',
+      category: 'Aerospace',
+      description: 'Designed and optimized lightweight structural systems for small satellites, focusing on strength-to-weight ratio and launch vehicle compatibility.',
+      image: '/struct.jpeg',
+      technologies: ['FEA Analysis', 'ANSYS', 'Structural Design', 'Material Optimization'],
       features: [
-        '6-DOF precision control',
-        'Real-time feedback system',
-        'Payload capacity: 10kg',
-        'Repeatability: ±0.1mm',
+        'Optimized weight reduction',
+        'Launch vehicle compatibility',
+        'Enhanced structural integrity',
+        'Cost-effective design solutions',
       ],
-      link: '#',
+      link: '/3. Developing efficient structural systems for small satellites.pdf',
+      isPdf: true,
     },
     {
-      id: 2,
-      title: 'Efficient Heat Exchange System',
-      category: 'Thermodynamics',
-      description: 'Optimized heat exchanger design for industrial applications, improving efficiency by 35% while reducing material costs through innovative fin geometry.',
-      image: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800',
-      technologies: ['CFD Analysis', 'SolidWorks', 'ANSYS Fluent', 'Thermal Simulation'],
+      id: 7,
+      title: 'Feasibility Study of Ground Source Heat Pumps',
+      category: 'Renewable Energy',
+      description: 'Comprehensive feasibility study of ground source heat pumps for different building types under Indian climate zones. Analyzed system performance, economic viability, and environmental impact.',
+      image: '/Fease.jpeg',
+      technologies: ['Thermal Analysis', 'Energy Systems', 'Climate Analysis', 'Economic Modeling'],
       features: [
-        '35% efficiency improvement',
-        'Cost reduction of 20%',
-        'Compact design',
-        'Enhanced heat transfer',
+        'Multi-climate zone analysis',
+        'Building type optimization',
+        'Economic feasibility assessment',
+        'Environmental impact evaluation',
       ],
-      link: '#',
+      link: '/2. Feasibility study of ground source heat pumps for different building types under Indian climate zones (2).pdf',
+      isPdf: true,
     },
     {
       id: 3,
-      title: 'Automotive Suspension System',
-      category: 'Automotive',
-      description: 'Complete redesign of automotive suspension system with focus on performance and comfort. Utilized FEA for stress analysis and optimization.',
-      image: 'https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?w=800',
-      technologies: ['CATIA', 'ANSYS', 'FEA Analysis', 'Motion Simulation'],
+      title: 'Portfolio V1',
+      category: 'Portfolio',
+      description: 'Comprehensive portfolio showcasing engineering projects, design work, and technical expertise across multiple domains including aerospace, renewable energy, and structural systems.',
+      image: '/image.png',
+      technologies: ['Engineering Design', 'Project Management', 'Technical Documentation', 'CAD/CAE'],
       features: [
-        'Improved ride comfort',
-        'Enhanced stability',
-        'Weight reduction: 15%',
-        'Durability testing completed',
+        'Multi-domain project showcase',
+        'Detailed technical documentation',
+        'Design process visualization',
+        'Professional presentation',
       ],
-      link: '#',
+      link: '/1. Portfolio_V1.pdf',
+      isPdf: true,
     },
     {
       id: 4,
@@ -166,8 +169,11 @@ const Projects = () => {
                 <div className="flex gap-4">
                   <motion.a
                     href={project.link}
+                    target={project.isPdf ? "_blank" : undefined}
+                    rel={project.isPdf ? "noopener noreferrer" : undefined}
                     whileHover={{ scale: 1.1 }}
                     className="text-blue-400 hover:text-blue-300 transition-colors"
+                    onClick={(e) => project.isPdf && e.stopPropagation()}
                   >
                     <ExternalLink size={20} />
                   </motion.a>
@@ -247,12 +253,14 @@ const Projects = () => {
                 <div className="flex gap-4">
                   <motion.a
                     href={selectedProject.link}
+                    target={selectedProject.isPdf ? "_blank" : undefined}
+                    rel={selectedProject.isPdf ? "noopener noreferrer" : undefined}
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     className="px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg font-semibold text-white flex items-center gap-2"
                   >
                     <ExternalLink size={20} />
-                    View Project
+                    {selectedProject.isPdf ? 'View PDF' : 'View Project'}
                   </motion.a>
                 </div>
               </div>
