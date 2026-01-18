@@ -1,12 +1,10 @@
 import { useState, useEffect } from 'react'
 import { useGLTF } from '@react-three/drei'
-import * as THREE from 'three'
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 
 /**
  * Hook to preload and track loading progress of GLB models
- * Uses XMLHttpRequest for reliable progress tracking on Vercel
- * Ensures model is FULLY loaded and available in drei's cache before allowing site to start
+ * Uses XMLHttpRequest for progress tracking, then lets drei's preload handle everything
+ * Ensures model is FULLY loaded via drei's system before allowing site to start
  */
 export function useModelPreloader(modelUrl) {
   const [loading, setLoading] = useState(true)
@@ -26,32 +24,9 @@ export function useModelPreloader(modelUrl) {
     setError(null)
     setIsCached(false)
 
-    // Check if model is already cached
+    // Check if model is already cached by trying preload
     const checkCache = async () => {
       try {
-        const cache = useGLTF.cache || new Map()
-        if (cache.has(modelUrl)) {
-          if (!cancelled) {
-            setIsCached(true)
-            setProgress(100)
-            // Verify it's actually ready by calling preload
-            try {
-              await useGLTF.preload(modelUrl)
-              if (!cancelled) {
-                setTimeout(() => {
-                  if (!cancelled) {
-                    setLoading(false)
-                  }
-                }, 200)
-                return true
-              }
-            } catch (err) {
-              // Cache might be stale, continue with loading
-            }
-          }
-        }
-
-        // Try preload with timeout - if cached, resolves quickly
         const preloadPromise = useGLTF.preload(modelUrl)
         const timeoutPromise = new Promise(resolve => setTimeout(() => resolve('timeout'), 300))
         const result = await Promise.race([preloadPromise, timeoutPromise])
@@ -78,23 +53,23 @@ export function useModelPreloader(modelUrl) {
     checkCache().then((wasCached) => {
       if (wasCached || cancelled) return
 
-      // Not cached - download with XMLHttpRequest for reliable progress on Vercel
+      // Not cached - download with XMLHttpRequest for progress tracking
       setProgress(5)
 
       xhr = new XMLHttpRequest()
       xhr.open('GET', modelUrl, true)
       xhr.responseType = 'arraybuffer'
 
-      // Track download progress (5% to 85%)
+      // Track download progress (5% to 90%)
       xhr.addEventListener('progress', (e) => {
         if (cancelled) return
         
         if (e.lengthComputable && e.total > 0) {
-          const downloadProgress = 5 + (e.loaded / e.total) * 80
-          setProgress(Math.min(85, downloadProgress))
+          const downloadProgress = 5 + (e.loaded / e.total) * 85
+          setProgress(Math.min(90, downloadProgress))
         } else {
           // Estimate based on typical file size (~17MB)
-          const estimatedProgress = Math.min(85, 5 + (e.loaded / 18000000) * 80)
+          const estimatedProgress = Math.min(90, 5 + (e.loaded / 18000000) * 85)
           setProgress(estimatedProgress)
         }
       })
@@ -103,73 +78,33 @@ export function useModelPreloader(modelUrl) {
         if (cancelled) return
 
         try {
-          const arrayBuffer = xhr.response
-          setProgress(87)
-
-          // CRITICAL: Use drei's preload directly with the original URL
-          // This ensures proper caching in drei's system
-          // We'll let drei handle the actual loading, but we've already downloaded it
-          // So we'll create a temporary blob URL and let drei load from that,
-          // then replace it in cache with the original URL
+          setProgress(92)
           
-          const blob = new Blob([arrayBuffer])
-          const blobUrl = URL.createObjectURL(blob)
-          
-          // Load using drei's system by calling preload with blob URL first
-          // Then we'll manually cache it with the original URL
-          const loader = new GLTFLoader()
-          
-          loader.load(
-            blobUrl,
-            async (gltf) => {
+          // CRITICAL: Now let drei's preload handle the loading and caching
+          // Since we just downloaded it, browser cache will be used
+          // This ensures drei caches it properly for useGLTF to find
+          try {
+            // Call drei's preload - it will load from browser cache (we just downloaded it)
+            await useGLTF.preload(modelUrl)
+            
+            setProgress(100)
+            
+            // Extra delay to ensure drei's system is fully ready
+            setTimeout(() => {
               if (!cancelled) {
-                setProgress(95)
-                URL.revokeObjectURL(blobUrl)
-                
-                // Store in drei's cache with the ORIGINAL URL
-                // This is critical - drei's useGLTF will look for the original URL
-                const cache = useGLTF.cache || new Map()
-                cache.set(modelUrl, gltf)
-                
-                // Now call preload with original URL - should use cached version
-                // But if it doesn't, it will load from network (which is fine since we have it)
-                try {
-                  await useGLTF.preload(modelUrl)
-                } catch (preloadErr) {
-                  // If preload fails, the cache entry should still work
-                  console.log('Preload note:', preloadErr.message || 'Model cached manually')
-                }
-                
-                setProgress(100)
-                
-                // Extra delay to ensure drei's system recognizes the cache
-                setTimeout(() => {
-                  if (!cancelled) {
-                    setLoading(false)
-                  }
-                }, 1200)
-              }
-            },
-            (progressEvent) => {
-              if (!cancelled) {
-                // Parsing progress: 87% to 95%
-                if (progressEvent.total > 0) {
-                  const parseProgress = 87 + (progressEvent.loaded / progressEvent.total) * 8
-                  setProgress(Math.min(95, parseProgress))
-                } else {
-                  setProgress(90)
-                }
-              }
-            },
-            (err) => {
-              if (!cancelled) {
-                URL.revokeObjectURL(blobUrl)
-                console.error('GLTF loading error:', err)
-                setError(err)
                 setLoading(false)
               }
-            }
-          )
+            }, 1000)
+          } catch (preloadErr) {
+            console.error('Preload error:', preloadErr)
+            // Even if preload fails, model is downloaded - proceed
+            setProgress(100)
+            setTimeout(() => {
+              if (!cancelled) {
+                setLoading(false)
+              }
+            }, 1000)
+          }
         } catch (err) {
           if (!cancelled) {
             console.error('XHR load error:', err)
