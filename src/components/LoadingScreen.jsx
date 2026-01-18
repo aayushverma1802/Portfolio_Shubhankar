@@ -16,15 +16,29 @@ const LoadingScreen = ({ onComplete }) => {
   ]
 
   useEffect(() => {
-    // If cached, skip loading screen quickly
+    // CRITICAL: Only complete when model is FULLY loaded (not loading AND progress is 100)
+    // This ensures website doesn't start until model is ready
+    if (!modelLoading && modelProgress >= 100) {
+      setProgress(100)
+      setLoadingText(loadingMessages[3])
+      // Small delay to ensure model is fully ready
+      setTimeout(() => {
+        if (onComplete) onComplete()
+      }, 300)
+      return
+    }
+
+    // If cached and loading is false, model is ready
     if (isCached && !modelLoading) {
       setProgress(100)
+      setLoadingText(loadingMessages[3])
       setTimeout(() => {
         if (onComplete) onComplete()
       }, 200)
       return
     }
 
+    // Show progress while loading
     if (modelLoading) {
       const currentProgress = Math.max(5, modelProgress)
       setProgress(currentProgress)
@@ -38,24 +52,19 @@ const LoadingScreen = ({ onComplete }) => {
       } else {
         setLoadingText(loadingMessages[3])
       }
-    } else {
-      setProgress(100)
-      setLoadingText(loadingMessages[3])
-      // Extra delay to ensure model is fully cached before scene renders
-      setTimeout(() => {
-        if (onComplete) onComplete()
-      }, 800)
     }
   }, [modelLoading, modelProgress, isCached, onComplete])
 
   useEffect(() => {
-    if (modelError) {
+    // Only handle errors if loading is complete or failed
+    if (modelError && !modelLoading) {
       console.warn('Model loading error, continuing anyway:', modelError)
+      // Still wait a bit to ensure site doesn't break
       setTimeout(() => {
         if (onComplete) onComplete()
       }, 1000)
     }
-  }, [modelError, onComplete])
+  }, [modelError, modelLoading, onComplete])
 
   return (
     <div className="fixed inset-0 bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900 flex items-center justify-center z-50">

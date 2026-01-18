@@ -5,8 +5,8 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 
 /**
  * Hook to preload and track loading progress of GLB models
- * Checks cache first - if cached, loads instantly
- * Uses drei's loader system for proper caching on Vercel
+ * Uses XMLHttpRequest for reliable progress tracking on Vercel
+ * Ensures model is FULLY loaded before allowing site to start
  */
 export function useModelPreloader(modelUrl) {
   const [loading, setLoading] = useState(true)
@@ -26,132 +26,163 @@ export function useModelPreloader(modelUrl) {
     setError(null)
     setIsCached(false)
 
-    // First, try to check if model is already cached
+    // Check if model is already cached in drei's cache
     const checkCache = async () => {
       try {
-        // Check if already in drei's cache
         const cache = useGLTF.cache || new Map()
         if (cache.has(modelUrl)) {
           if (!cancelled) {
             setIsCached(true)
             setProgress(100)
-            setTimeout(() => {
+            // Verify it's actually ready by calling preload
+            try {
+              await useGLTF.preload(modelUrl)
               if (!cancelled) {
-                setLoading(false)
+                setTimeout(() => {
+                  if (!cancelled) {
+                    setLoading(false)
+                  }
+                }, 200)
+                return true
               }
-            }, 100)
-            return true
+            } catch (err) {
+              // Cache might be stale, continue with loading
+            }
           }
         }
 
-        // Try to preload - if it's cached, this will resolve quickly
+        // Try preload with timeout - if cached, resolves quickly
         const preloadPromise = useGLTF.preload(modelUrl)
-        
-        // Race with timeout to detect cached models
-        const timeoutPromise = new Promise(resolve => setTimeout(() => resolve('timeout'), 200))
+        const timeoutPromise = new Promise(resolve => setTimeout(() => resolve('timeout'), 300))
         const result = await Promise.race([preloadPromise, timeoutPromise])
         
         if (result !== 'timeout' && !cancelled) {
-          // Model is cached!
           setIsCached(true)
           setProgress(100)
           setTimeout(() => {
             if (!cancelled) {
               setLoading(false)
             }
-          }, 100)
+          }, 200)
           return true
         }
       } catch (err) {
-        // Not cached, continue with normal loading
+        // Not cached, continue with download
       }
       return false
     }
 
-    // Try cache first
+    let xhr = null
+
+    // Check cache first
     checkCache().then((wasCached) => {
       if (wasCached || cancelled) return
 
-      // Not cached, download with progress tracking using drei's loader system
+      // Not cached - download with XMLHttpRequest for reliable progress on Vercel
       setProgress(5)
 
-      // Use drei's loader with LoadingManager for progress tracking
-      const manager = new THREE.LoadingManager()
-      let downloadProgress = 0
+      xhr = new XMLHttpRequest()
+      xhr.open('GET', modelUrl, true)
+      xhr.responseType = 'arraybuffer'
 
-      manager.onProgress = (url, itemsLoaded, itemsTotal) => {
-        if (!cancelled && itemsTotal > 0) {
-          // Download progress: 5% to 85%
-          downloadProgress = 5 + (itemsLoaded / itemsTotal) * 80
+      // Track download progress (5% to 85%)
+      xhr.addEventListener('progress', (e) => {
+        if (cancelled) return
+        
+        if (e.lengthComputable && e.total > 0) {
+          const downloadProgress = 5 + (e.loaded / e.total) * 80
           setProgress(Math.min(85, downloadProgress))
+        } else {
+          // Estimate based on typical file size (~17MB)
+          const estimatedProgress = Math.min(85, 5 + (e.loaded / 18000000) * 80)
+          setProgress(estimatedProgress)
         }
-      }
+      })
 
-      manager.onLoad = () => {
-        if (!cancelled) {
-          setProgress(85)
-        }
-      }
+      xhr.addEventListener('load', () => {
+        if (cancelled) return
 
-      manager.onError = (url) => {
-        if (!cancelled) {
-          console.error('Loading manager error:', url)
-        }
-      }
+        try {
+          const arrayBuffer = xhr.response
+          setProgress(87)
 
-      // Use drei's loader (which uses GLTFLoader internally)
-      const loader = new GLTFLoader(manager)
-
-      // Load directly from URL - drei will cache it automatically
-      loader.load(
-        modelUrl,
-        async (gltf) => {
-          if (!cancelled) {
-            setProgress(95)
-            
-            // Ensure drei's cache has it
-            try {
-              const cache = useGLTF.cache || new Map()
-              cache.set(modelUrl, gltf)
-              
-              // Preload to ensure drei recognizes it
-              await useGLTF.preload(modelUrl)
-            } catch (err) {
-              // Model is cached manually, drei will use it
-              console.log('Cache note:', err.message || 'Model cached')
-            }
-            
-            setProgress(100)
-            setTimeout(() => {
+          // Parse with GLTFLoader
+          const loader = new GLTFLoader()
+          loader.parse(
+            arrayBuffer,
+            modelUrl,
+            async (gltf) => {
               if (!cancelled) {
+                setProgress(95)
+
+                // Store in drei's cache
+                try {
+                  const cache = useGLTF.cache || new Map()
+                  cache.set(modelUrl, gltf)
+                  
+                  // CRITICAL: Wait for drei's preload to complete
+                  // This ensures the model is fully ready
+                  await useGLTF.preload(modelUrl)
+                  
+                  setProgress(100)
+                  
+                  // Small delay to ensure everything is ready
+                  setTimeout(() => {
+                    if (!cancelled) {
+                      setLoading(false)
+                    }
+                  }, 500)
+                } catch (err) {
+                  console.error('Cache/preload error:', err)
+                  // Even if preload fails, model is parsed - continue
+                  setProgress(100)
+                  setTimeout(() => {
+                    if (!cancelled) {
+                      setLoading(false)
+                    }
+                  }, 500)
+                }
+              }
+            },
+            (err) => {
+              if (!cancelled) {
+                console.error('GLTF parsing error:', err)
+                setError(err)
                 setLoading(false)
               }
-            }, 300)
-          }
-        },
-        (progressEvent) => {
-          if (!cancelled) {
-            // Parsing progress: 85% to 100%
-            if (progressEvent.total > 0) {
-              const parseProgress = 85 + (progressEvent.loaded / progressEvent.total) * 15
-              setProgress(Math.min(100, parseProgress))
-            } else {
-              setProgress(90)
             }
-          }
-        },
-        (err) => {
+          )
+        } catch (err) {
           if (!cancelled) {
-            console.error('GLTF loading error:', err)
+            console.error('XHR load error:', err)
             setError(err)
             setLoading(false)
           }
         }
-      )
+      })
+
+      xhr.addEventListener('error', () => {
+        if (!cancelled) {
+          console.error('XHR error loading model')
+          setError(new Error('Failed to load model'))
+          setLoading(false)
+        }
+      })
+
+      xhr.addEventListener('abort', () => {
+        if (!cancelled) {
+          setLoading(false)
+        }
+      })
+
+      xhr.send()
     })
 
     return () => {
       cancelled = true
+      if (xhr) {
+        xhr.abort()
+      }
     }
   }, [modelUrl])
 
